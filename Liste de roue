@@ -1,0 +1,65 @@
+1. Rareté
+Aucun (Poids : 3x)
+Starter (Poids : 2x)
+Fabuleux
+Légendaire (Poids 0,5x)
+
+2. Double Type ?
+Oui
+Non (Poids : 2x)
+
+3. Type (Si Double Type, faire deux fois la roue)
+Vol
+Ténèbres
+Spectre
+Sol
+Roche
+Psy
+Poison
+Plante
+Normal
+Insecte
+Glace
+Feu
+Fée
+Electrique
+Eau
+Dragon
+Combat
+Acier
+
+4. Stats (Faire tourner la roue pour chaque stats : PV, ATT, DEF, ATT. Spe, DEF. Spe, VIT)
+1
+10
+20
+30
+40
+45
+50
+55
+60
+65
+70
+75
+80
+90
+100
+110
+125
+150
+
+5. Méga Evolution ?
+Oui
+Non (Poids : 6x)
+
+5.a Quelles stats sont boostées ? (Tourner la roue deux fois seulement il y a une Méga Evolution. Entre les deux stats, retourner la roue stats et additioner le résultat avec la valeur corespondante de la stat)
+PV
+ATT
+DEF
+ATT. Spe
+DEF. Spe
+VIT
+
+6. Shiny
+Oui
+Non (Poids : 16x)
