@@ -1,34 +1,49 @@
 <!DOCTYPE html>
+<!-- Page de paramètres de l'application "Roue du Destin - Fakemon".
+     Permet à l'utilisateur d'ajuster les pourcentages de chaque catégorie de roue,
+     puis de sauvegarder ou réinitialiser ces valeurs. -->
 <html lang="fr" class="bg-slate-900 text-white min-h-screen">
 <head>
     <meta charset="UTF-8">
+    <!-- Désactive le zoom manuel sur mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Paramètres - Roue du Destin</title>
+    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Police Google Fonts : Poppins (poids 400, 600, 800) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body class="font-['Poppins'] flex flex-col items-center justify-start min-h-screen p-4 pb-12">
 
+    <!-- ===== EN-TÊTE ===== -->
     <header class="text-center w-full max-w-sm mb-6 mt-4 relative">
+        <!-- Bouton retour vers la page principale -->
         <a href="index.html" class="absolute left-0 top-1/2 -translate-y-1/2 bg-slate-800 text-slate-300 hover:text-white px-3 py-1 rounded-full border border-slate-700 text-sm">⬅ Retour</a>
         <h1 class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-2">Paramètres</h1>
     </header>
 
+    <!-- ===== CARTE PRINCIPALE ===== -->
     <div class="w-full max-w-sm bg-slate-800 rounded-[2rem] shadow-xl border border-slate-700 p-6 mb-4">
+        <!-- Instruction affichée en haut du formulaire -->
         <p class="text-xs text-slate-400 mb-4">Ajustez les pourcentages pour chaque roue. Le total de chaque catégorie doit idéalement valoir exactement 100%.</p>
         
+        <!-- Conteneur dans lequel le JS (settings.js) injecte dynamiquement
+             les sections de paramètres pour chaque catégorie de la roue -->
         <div id="settings-container" class="space-y-6">
             <!-- Injecté via JS -->
         </div>
 
+        <!-- Bouton de sauvegarde : enregistre les modifications dans le localStorage -->
         <button id="btn-save" class="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-lg">
             💾 Sauvegarder
         </button>
+        <!-- Bouton de réinitialisation : supprime les données sauvegardées et restaure les valeurs par défaut -->
         <button id="btn-reset" class="w-full mt-3 bg-red-500 hover:bg-red-600 text-slate-100 font-bold py-2 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm">
             🔄 Réinitialiser
         </button>
     </div>
 
+    <!-- Chargement du module JS qui gère la logique des paramètres -->
     <script type="module" src="js/settings.js"></script>
 </body>
 </html>
