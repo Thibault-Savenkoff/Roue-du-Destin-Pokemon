@@ -29,6 +29,15 @@ let currentMode = 'auto';    // Mode actif : 'auto' | 'rapide' | 'manuel'
 let manualResolve = null;    // Stocke la fonction resolve() d'une Promise en attente d'un clic
                               // (utilisé uniquement en mode manuel pour "débloquer" l'étape suivante)
 
+/**
+ * Vibration helper using la Web Vibration API native du navigateur.
+ * Ne fait rien si l'API n'est pas supportée.
+ * @param {number|Array<number>} pattern
+ */
+function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
 // ── Gestion du clic sur le canvas (mode manuel) ──────────────────────────────
 // En mode manuel, l'utilisateur doit cliquer sur la roue pour déclencher chaque spin.
 wheelCanvas.addEventListener('click', () => {
@@ -53,7 +62,7 @@ function waitManualClick() {
     if (currentMode !== 'manuel') return Promise.resolve(); // Rien à attendre en auto/rapide
     return new Promise(resolve => {
         manualResolve = resolve; // La résolution sera déclenchée par le click listener ci-dessus
-        titleElem.textContent = "👆 Cliquez sur la roue pour lancer...";
+        titleElem.textContent = "Cliquez sur la roue";
         document.getElementById('center-circle').textContent = "Tap"; // Indique à l'utilisateur qu'il doit agir
     });
 }
@@ -217,21 +226,17 @@ function spinWheel(title, optionsArray, isType = false) {
         wheelCanvas.style.transform  = `rotate(${targetRotation}deg)`;
 
         // ── Retour haptique pendant la rotation ──
-        // Vibre brièvement chaque fois que le pointeur virtuel franchit une tranche
         let lastSegment = -1;
         let startTime   = performance.now();
 
         function tickHaptics(time) {
-            // Lit la rotation réelle interpolée via la matrice de transformation calculée par le navigateur
             const computedStyle = window.getComputedStyle(wheelCanvas);
-            const matrix = new WebKitCSSMatrix(computedStyle.transform);
-            let rot = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI); // Angle réel en degrés
+            const matrix = new (window.WebKitCSSMatrix || window.DOMMatrix)(computedStyle.transform);
+            let rot = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI);
 
-            // Convertit l'angle de la roue en position du pointeur virtuel (fixe, en haut)
             let pointerAngle = (360 - rot) % 360;
             if (pointerAngle < 0) pointerAngle += 360;
 
-            // Détermine dans quelle tranche se trouve le pointeur
             let currentSegment = -1;
             for (let seg of segmentsCoords) {
                 if (pointerAngle >= seg.start && pointerAngle < seg.end) {
@@ -239,15 +244,13 @@ function spinWheel(title, optionsArray, isType = false) {
                     break;
                 }
             }
-            if (currentSegment === -1) currentSegment = 0; // Fallback si hors-limites (arrondi)
+            if (currentSegment === -1) currentSegment = 0;
 
-            // Vibre si on vient de changer de tranche
             if (currentSegment !== lastSegment && lastSegment !== -1) {
-                if (navigator.vibrate) navigator.vibrate(10);
+                vibrate(10);
             }
             lastSegment = currentSegment;
 
-            // Continue le tick tant que l'animation n'est pas terminée
             if (time - startTime < SPIN_DURATION) {
                 requestAnimationFrame(tickHaptics);
             }
@@ -256,7 +259,7 @@ function spinWheel(title, optionsArray, isType = false) {
 
         // ── Fin de l'animation ──
         setTimeout(() => {
-            if (navigator.vibrate) navigator.vibrate([40, 30, 80]); // Vibration de "résultat"
+            vibrate([40, 30, 80]);
             currentRotation = targetRotation; // Mémorise la rotation finale pour le prochain spin
             isAnimating = false;
 
@@ -329,14 +332,14 @@ async function lanceDestinee(mode = 'auto') {
         const rarete = await spinWheel("1. Rareté", data.rarete);
         finalData.rarete = rarete.label;
         addToSummary("Rareté", finalData.rarete);
-        if (currentMode !== 'rapide') await pause(PAUSE_DURATION);
+        if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
         // ── Étape 2 : Double Type ? ──
         updateProgress(13);
         await waitManualClick();
         const isDoubleType = await spinWheel("2. Double Type ?", data.doubleType);
         finalData.isDouble = isDoubleType.label === "Oui";
-        if (currentMode !== 'rapide') await pause(PAUSE_DURATION);
+        if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
         // ── Étape 3 : Type Principal ──
         updateProgress(13);
@@ -347,7 +350,7 @@ async function lanceDestinee(mode = 'auto') {
 
         // ── Étape 3b (conditionnelle) : Type Secondaire ──
         if (finalData.isDouble) {
-            if (currentMode !== 'rapide') await pause(PAUSE_DURATION);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
             updateProgress(13);
             // Exclut le type 1 déjà tiré pour éviter un doublon
             let optionsType2 = data.types.filter(t => t.label !== finalData.type1);
@@ -358,7 +361,7 @@ async function lanceDestinee(mode = 'auto') {
         } else {
             finalData.type2 = "Aucun"; // Pas de second type
         }
-        if (currentMode !== 'rapide') await pause(PAUSE_DURATION);
+        if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
         // ── Étape 4 : Stats (une roue par stat, 6 au total) ──
         finalData.stats = {};
@@ -368,7 +371,7 @@ async function lanceDestinee(mode = 'auto') {
             const pulledStat = await spinWheel(`4. Stat : ${stat.label}`, data.statsValues);
             finalData.stats[stat.key] = pulledStat.value; // Stocke par clé (hp, atk, def, spa, spd, vit)
             addToSummary(stat.label, finalData.stats[stat.key]);
-            if (currentMode !== 'rapide') await pause(1000); // Pause plus courte entre les stats
+            if (currentMode === 'auto') await pause(1000); // Pause plus courte entre les stats
         }
 
         // ── Étape 5 : Méga-Évolution ──
@@ -377,30 +380,42 @@ async function lanceDestinee(mode = 'auto') {
         const mega = await spinWheel("5. Transformation ?", data.mega);
         finalData.isMega = mega.label === "Oui";
         addToSummary("Méga-Evo", finalData.isMega ? "Oui" : "Non");
-        if (currentMode !== 'rapide') await pause(PAUSE_DURATION);
+        if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
         // ── Étapes 5a/5b (conditionnelles) : Boosts Méga ──
         if (finalData.isMega) {
             finalData.megaBoosts = {};
-            // Tire 2 stats aléatoires à booster (sans répétition)
-            let statNamesPool = [...data.statsNames];
-            statNamesPool.sort(() => 0.5 - Math.random()); // Mélange aléatoire
-            const boost1 = statNamesPool[0];
-            const boost2 = statNamesPool[1];
-
+        
+            // ── Roue : quelle stat est boostée en premier ? ──
             updateProgress(14);
             await waitManualClick();
-            const boostVal1 = await spinWheel(`Boost (${boost1.label})`, data.statsValues);
-            finalData.stats[boost1.key] += boostVal1.value; // Ajoute directement aux stats existantes
-            addToSummary(`Boost Méga ${boost1.label}`, `+${boostVal1.value} (Total: ${finalData.stats[boost1.key]})`, true);
-            if (currentMode !== 'rapide') await pause(PAUSE_DURATION);
-
+            const boost1 = await spinWheel("Méga : Stat boostée 1", data.statsNames);
+            addToSummary("Stat Méga 1", boost1.label, true);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        
+            // ── Roue : valeur du boost 1 ──
             updateProgress(15);
+            await waitManualClick();
+            const boostVal1 = await spinWheel(`Boost (${boost1.label})`, data.statsValues);
+            finalData.stats[boost1.key] += boostVal1.value;
+            addToSummary(`Boost Méga ${boost1.label}`, `+${boostVal1.value} (Total: ${finalData.stats[boost1.key]})`, true);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        
+            // ── Roue : quelle stat est boostée en second ? (exclut la première) ──
+            const statsNamesPool2 = data.statsNames.filter(s => s.key !== boost1.key);
+            updateProgress(16);
+            await waitManualClick();
+            const boost2 = await spinWheel("Méga : Stat boostée 2", statsNamesPool2);
+            addToSummary("Stat Méga 2", boost2.label, true);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        
+            // ── Roue : valeur du boost 2 ──
+            updateProgress(17);
             await waitManualClick();
             const boostVal2 = await spinWheel(`Boost (${boost2.label})`, data.statsValues);
             finalData.stats[boost2.key] += boostVal2.value;
             addToSummary(`Boost Méga ${boost2.label}`, `+${boostVal2.value} (Total: ${finalData.stats[boost2.key]})`, true);
-            if (currentMode !== 'rapide') await pause(PAUSE_DURATION);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
         }
 
         // ── Étape 6 : Shiny ──
@@ -413,7 +428,7 @@ async function lanceDestinee(mode = 'auto') {
         } else {
             addToSummary("Shiny", "Non");
         }
-        if (currentMode !== 'rapide') await pause(PAUSE_DURATION);
+        if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
         // ── Fin du tirage ──
         titleElem.textContent = "Destinée Générée !";
@@ -461,8 +476,7 @@ function generateOutputs(d) {
     promptOutput.value = prompt;
     outputSection.classList.remove('hidden'); // Révèle la section outputs
 
-    // Vibration de célébration de fin de tirage
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 400]);
+    vibrate([100, 50, 100, 50, 400]);
 }
 
 // ── Binding des boutons ───────────────────────────────────────────────────────

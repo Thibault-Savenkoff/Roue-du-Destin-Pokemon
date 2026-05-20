@@ -153,7 +153,6 @@
             document.execCommand('copy');
             // Désélectionne le texte après la copie
             window.getSelection().removeAllRanges();
-            // Vibration courte sur mobile pour confirmer l'action (si supporté)
             if (navigator.vibrate) navigator.vibrate(50);
             
             // Récupère le bouton "Copier" situé juste après le textarea
