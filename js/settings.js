@@ -20,6 +20,83 @@ const btnSave = document.getElementById('btn-save');
 // Référence au bouton "Réinitialiser"
 const btnReset = document.getElementById('btn-reset');
 
+// --- Confetti settings UI (mode + intensity) ---
+function renderConfettiControls() {
+    // Read saved values or defaults
+    const savedMode = localStorage.getItem('confetti.mode') || 'auto';
+    const savedIntensity = localStorage.getItem('confetti.intensity') || '100';
+
+    const confettiSection = document.createElement('div');
+    confettiSection.classList.add('bg-slate-900', 'p-3', 'rounded-xl', 'border', 'border-slate-700');
+
+    const title = document.createElement('h3');
+    title.classList.add('font-bold', 'text-yellow-400', 'uppercase', 'tracking-wider', 'text-sm', 'mb-3');
+    title.textContent = 'Confetti (Mode & Intensité)';
+    confettiSection.appendChild(title);
+
+    // Mode selector
+    const modeRow = document.createElement('div');
+    modeRow.classList.add('flex', 'items-center', 'justify-between', 'mb-3');
+    const modeLabel = document.createElement('span');
+    modeLabel.textContent = 'Mode';
+    modeLabel.classList.add('text-slate-300');
+    const modeSelect = document.createElement('select');
+    modeSelect.classList.add('bg-slate-800', 'text-white', 'rounded', 'p-1', 'border', 'border-slate-600');
+    ['auto','canvas','dom'].forEach(m => {
+        const opt = document.createElement('option'); opt.value = m; opt.text = m.charAt(0).toUpperCase() + m.slice(1);
+        if (m === savedMode) opt.selected = true;
+        modeSelect.appendChild(opt);
+    });
+    modeSelect.addEventListener('change', (e) => {
+        localStorage.setItem('confetti.mode', e.target.value);
+    });
+    modeRow.appendChild(modeLabel);
+    modeRow.appendChild(modeSelect);
+    confettiSection.appendChild(modeRow);
+
+    // Intensity slider
+    const intensityRow = document.createElement('div');
+    intensityRow.classList.add('flex', 'items-center', 'justify-between', 'gap-3');
+    const intensityLabel = document.createElement('span');
+    intensityLabel.textContent = 'Intensité';
+    intensityLabel.classList.add('text-slate-300');
+    const intensityWrapper = document.createElement('div');
+    intensityWrapper.classList.add('flex', 'items-center', 'gap-2');
+    const intensityInput = document.createElement('input');
+    intensityInput.type = 'range'; intensityInput.min = '0'; intensityInput.max = '100'; intensityInput.value = savedIntensity;
+    intensityInput.classList.add('w-36');
+    const intensityValue = document.createElement('span'); intensityValue.textContent = `${savedIntensity}%`;
+    intensityValue.classList.add('text-slate-300', 'text-sm');
+    intensityInput.addEventListener('input', (e) => {
+        intensityValue.textContent = `${e.target.value}%`;
+    });
+    intensityInput.addEventListener('change', (e) => {
+        localStorage.setItem('confetti.intensity', String(e.target.value));
+    });
+    intensityWrapper.appendChild(intensityInput);
+    intensityWrapper.appendChild(intensityValue);
+    intensityRow.appendChild(intensityLabel);
+    intensityRow.appendChild(intensityWrapper);
+    confettiSection.appendChild(intensityRow);
+
+    // Test button (opens index page with preview param)
+    const testBtn = document.createElement('button');
+    testBtn.classList.add('mt-3', 'w-full', 'bg-blue-600', 'hover:bg-blue-700', 'text-white', 'py-2', 'rounded');
+    testBtn.textContent = '▶ Tester confetti (ouvrir la page principale)';
+    testBtn.addEventListener('click', () => {
+        // Ensure current values are saved, then open index.html with preview param
+        if (modeSelect && intensityInput) {
+            localStorage.setItem('confetti.mode', modeSelect.value);
+            localStorage.setItem('confetti.intensity', String(intensityInput.value));
+        }
+        window.open('index.html?previewConfetti=1', '_blank');
+    });
+    confettiSection.appendChild(testBtn);
+
+    // Insert the confetti section at the top of the container
+    container.insertAdjacentElement('afterbegin', confettiSection);
+}
+
 // Copie profonde des données courantes pour permettre l'édition sans modifier l'original.
 // On utilise JSON.parse(JSON.stringify(...)) car les données contiennent des objets imbriqués.
 let editingData = JSON.parse(JSON.stringify(data));
@@ -33,6 +110,12 @@ let editingData = JSON.parse(JSON.stringify(data));
 function render() {
     // Vide le conteneur avant de le re-remplir
     container.innerHTML = '';
+
+    // Rend les contrôles de confetti en haut
+    renderConfettiControls();
+
+    // Conteneur temporaire pour les sections de catégories (afin de préserver les controles en haut)
+    const categoriesParent = document.createElement('div');
 
     // Itère sur chaque catégorie de editingData (ex: "typePrimaire", "région", etc.)
     for (const [category, items] of Object.entries(editingData)) {
@@ -117,8 +200,11 @@ function render() {
         list.appendChild(totalDisplay);
 
         section.appendChild(list);
-        container.appendChild(section);
+        categoriesParent.appendChild(section);
     }
+
+    // Append categories after confetti controls
+    container.appendChild(categoriesParent);
 }
 
 // === SAUVEGARDE ===

@@ -38,6 +38,286 @@ function vibrate(pattern) {
     if (navigator.vibrate) navigator.vibrate(pattern);
 }
 
+let confettiContainer = null;
+let confettiPieces = [];
+let confettiAnimationId = null;
+const confettiColors = ['#F87171', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#F472B6', '#FCD34D', '#FFFFFF'];
+
+function ensureConfettiLayer() {
+    if (confettiContainer) return;
+    const stage = document.body;
+
+    confettiContainer = document.createElement('div');
+    confettiContainer.style.position = 'fixed';
+    confettiContainer.style.top = '0';
+    confettiContainer.style.left = '0';
+    confettiContainer.style.width = '100vw';
+    confettiContainer.style.height = '100vh';
+    confettiContainer.style.pointerEvents = 'none';
+    confettiContainer.style.overflow = 'visible';
+    confettiContainer.style.zIndex = '9998';
+    stage.appendChild(confettiContainer);
+
+    const style = document.createElement('style');
+    style.textContent = `
+        .confetti-piece {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 2px;
+            will-change: transform, opacity;
+            transform-origin: center;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function createConfettiPiece(width, height) {
+    const el = document.createElement('div');
+    const pieceWidth = Math.random() * 8 + 6;
+    const pieceHeight = Math.max(3, pieceWidth * (Math.random() * 0.7 + 0.25));
+    const startX = Math.random() * width;
+    const startY = Math.random() * -80 - pieceHeight;
+    const velocityX = (Math.random() - 0.5) * 12;
+    const velocityY = Math.random() * 1.6 + 2.6;
+    const rotation = Math.random() * 360;
+    const rotationSpeed = (Math.random() - 0.5) * 24;
+    const colorIndex = Math.floor(Math.random() * confettiColors.length);
+
+    el.className = 'confetti-piece';
+    el.style.width = `${pieceWidth}px`;
+    el.style.height = `${pieceHeight}px`;
+    el.style.backgroundColor = confettiColors[colorIndex];
+    el.style.borderRadius = Math.random() < 0.25 ? '50%' : `${Math.random() * 3 + 2}px`;
+    el.style.transform = `translate3d(${startX}px, ${startY}px, 0) rotate(${rotation}deg)`;
+    el.style.opacity = '0.98';
+
+    confettiContainer.appendChild(el);
+
+    return {
+        el,
+        x: startX,
+        y: startY,
+        vx: velocityX,
+        vy: velocityY,
+        rotation,
+        rotationSpeed,
+        alpha: 0.98,
+        drift: (Math.random() - 0.5) * 0.22,
+        wobble: Math.random() * 0.08 + 0.02
+    };
+}
+
+function updateConfetti() {
+    if (!confettiContainer || confettiPieces.length === 0) return;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    
+    for (let i = confettiPieces.length - 1; i >= 0; i--) {
+        const piece = confettiPieces[i];
+        
+        piece.vy += 0.14;
+        piece.x += piece.vx + Math.sin(piece.y * 0.03) * piece.wobble * 5;
+        piece.y += piece.vy;
+        piece.rotation += piece.rotationSpeed;
+        piece.vx += piece.drift * 0.08;
+        piece.alpha -= 0.0055;
+
+        piece.el.style.opacity = Math.max(0, piece.alpha);
+        piece.el.style.transform = `translate3d(${piece.x}px, ${piece.y}px, 0) rotate(${piece.rotation}deg)`;
+
+        if (piece.y > height + 50 || piece.alpha <= 0) {
+            piece.el.remove();
+            confettiPieces.splice(i, 1);
+        }
+    }
+
+    if (confettiPieces.length > 0) {
+        confettiAnimationId = requestAnimationFrame(updateConfetti);
+    } else {
+        confettiAnimationId = null;
+    }
+}
+
+function launchConfetti(count = 35) {
+    // Router: decide between canvas renderer and DOM renderer
+    // Read user preference or heuristic
+    const storedMode = localStorage.getItem('confetti.mode') || 'auto';
+    const storedIntensity = parseInt(localStorage.getItem('confetti.intensity') || '100', 10);
+    const intensity = Number.isFinite(storedIntensity) ? Math.max(0, Math.min(100, storedIntensity)) : 100;
+
+    // Helper heuristic for low-end devices
+    function shouldUseCanvasAuto() {
+        try {
+            if (navigator.deviceMemory && navigator.deviceMemory < 2) return true;
+            if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) return true;
+        } catch (e) {}
+        return false;
+    }
+
+    const mode = (storedMode === 'auto') ? (shouldUseCanvasAuto() ? 'canvas' : 'dom') : storedMode;
+
+    if (mode === 'canvas') {
+        launchConfettiCanvas(count, intensity);
+        return;
+    }
+
+    // Fallback to existing DOM implementation
+    const spawnCount = Math.min(Math.max(Math.round(count * intensity / 100), 10), 45);
+    ensureConfettiLayer();
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    for (let i = 0; i < spawnCount; i++) {
+        confettiPieces.push(createConfettiPiece(width, height));
+    }
+
+    if (!confettiAnimationId) {
+        confettiAnimationId = requestAnimationFrame(updateConfetti);
+    }
+}
+
+// ── Canvas-based confetti implementation (performant) ───────────────────────
+let confettiCanvas = null;
+let confettiCanvasCtx = null;
+let confettiCanvasParticles = [];
+let confettiCanvasAnimId = null;
+
+function ensureConfettiCanvas() {
+    if (confettiCanvas) return;
+    const stage = document.body;
+
+    confettiCanvas = document.createElement('canvas');
+    confettiCanvas.id = 'confetti-canvas';
+    confettiCanvas.style.position = 'fixed';
+    confettiCanvas.style.top = '0';
+    confettiCanvas.style.left = '0';
+    confettiCanvas.style.width = '100vw';
+    confettiCanvas.style.height = '100vh';
+    confettiCanvas.style.pointerEvents = 'none';
+    confettiCanvas.style.zIndex = '9999';
+    stage.appendChild(confettiCanvas);
+
+    function resizeCanvas() {
+        confettiCanvas.width = Math.max(1, Math.floor(window.innerWidth));
+        confettiCanvas.height = Math.max(1, Math.floor(window.innerHeight));
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    confettiCanvasCtx = confettiCanvas.getContext('2d');
+}
+
+function launchConfettiCanvas(count = 35, intensity = 100) {
+    ensureConfettiCanvas();
+    const wrapper = wheelCanvas.parentElement;
+    const width = confettiCanvas.width || wrapper.clientWidth;
+    const height = confettiCanvas.height || wrapper.clientHeight;
+
+    const spawnCount = Math.min(Math.max(Math.round(count * intensity / 100), 10), 45);
+
+    for (let i = 0; i < spawnCount; i++) {
+        const pieceWidth = Math.random() * 8 + 5;
+        const pieceHeight = Math.max(3, pieceWidth * (Math.random() * 0.8 + 0.4));
+        const x = Math.random() * width;
+        const y = Math.random() * -80 - pieceHeight;
+        const vx = (Math.random() - 0.5) * 10;
+        const vy = Math.random() * 2 + 2.5;
+        const rotation = Math.random() * Math.PI * 2;
+        const rotationSpeed = (Math.random() - 0.5) * 0.45;
+        const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+        const alpha = 0.98;
+        const drift = (Math.random() - 0.5) * 0.25;
+        const wobble = Math.random() * 0.08 + 0.02;
+        const rounded = Math.random() < 0.28;
+        const phase = Math.random() * Math.PI * 2;
+
+        confettiCanvasParticles.push({ x, y, vx, vy, w: pieceWidth, h: pieceHeight, rotation, rotationSpeed, color, alpha, drift, wobble, rounded, phase });
+    }
+
+    if (!confettiCanvasAnimId) {
+        confettiCanvasAnimId = requestAnimationFrame(updateConfettiCanvas);
+    }
+}
+
+function updateConfettiCanvas() {
+    if (!confettiCanvasCtx || confettiCanvasParticles.length === 0) {
+        confettiCanvasAnimId = null;
+        if (confettiCanvasCtx) confettiCanvasCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        return;
+    }
+
+    const ctx2 = confettiCanvasCtx;
+    const width = confettiCanvas.width;
+    const height = confettiCanvas.height;
+
+    ctx2.clearRect(0, 0, width, height);
+
+    for (let i = confettiCanvasParticles.length - 1; i >= 0; i--) {
+        const p = confettiCanvasParticles[i];
+
+        p.vy += 0.13;
+        p.x += p.vx + Math.sin(p.y * 0.04 + p.phase) * p.wobble * 10;
+        p.y += p.vy;
+        p.rotation += p.rotationSpeed;
+        p.vx += p.drift * 0.08;
+        p.alpha -= 0.0065;
+
+        ctx2.save();
+        ctx2.globalAlpha = Math.max(0, p.alpha);
+        ctx2.translate(p.x, p.y);
+        ctx2.rotate(p.rotation);
+        ctx2.fillStyle = p.color;
+
+        if (p.rounded) {
+            // draw rounded rectangle / pill shape
+            const r = Math.min(p.h, p.w) / 2;
+            ctx2.beginPath();
+            ctx2.moveTo(-p.w/2 + r, -p.h/2);
+            ctx2.arcTo(p.w/2, -p.h/2, p.w/2, p.h/2, r);
+            ctx2.arcTo(p.w/2, p.h/2, -p.w/2, p.h/2, r);
+            ctx2.arcTo(-p.w/2, p.h/2, -p.w/2, -p.h/2, r);
+            ctx2.arcTo(-p.w/2, -p.h/2, p.w/2, -p.h/2, r);
+            ctx2.closePath();
+            ctx2.fill();
+        } else if (p.w > p.h * 1.6) {
+            ctx2.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        } else {
+            ctx2.beginPath();
+            ctx2.ellipse(0, 0, p.w / 2, p.h / 2, 0, 0, Math.PI * 2);
+            ctx2.fill();
+        }
+
+        ctx2.restore();
+
+        if (p.y > height + 50 || p.alpha <= 0) {
+            confettiCanvasParticles.splice(i, 1);
+        }
+    }
+
+    if (confettiCanvasParticles.length > 0) {
+        confettiCanvasAnimId = requestAnimationFrame(updateConfettiCanvas);
+    } else {
+        confettiCanvasAnimId = null;
+    }
+}
+
+// Expose setters (persist to localStorage)
+function setConfettiMode(mode) {
+    if (!['auto','canvas','dom'].includes(mode)) mode = 'auto';
+    localStorage.setItem('confetti.mode', mode);
+}
+
+function setConfettiIntensity(n) {
+    const v = Math.max(0, Math.min(100, Number(n) || 100));
+    localStorage.setItem('confetti.intensity', String(v));
+}
+
+// Make simple globals accessible for debugging in console
+window.setConfettiMode = setConfettiMode;
+window.setConfettiIntensity = setConfettiIntensity;
+
 // ── Gestion du clic sur le canvas (mode manuel) ──────────────────────────────
 // En mode manuel, l'utilisateur doit cliquer sur la roue pour déclencher chaque spin.
 wheelCanvas.addEventListener('click', () => {
@@ -84,6 +364,33 @@ const typeColors = {
     'Fée': '#EE99AC', 'Normal': '#A8A878'
 };
 
+const MIN_DISPLAY_WHEEL_RATIO = 0.04; // Pourcentage minimum affiché sur la roue de visualisation
+
+function getNumericWeight(option) {
+    return option.percentage !== undefined ? option.percentage : option.weight;
+}
+
+function getDisplayOptions(options) {
+    const totalWeight = options.reduce((sum, opt) => sum + getNumericWeight(opt), 0);
+    const minDisplayWeight = totalWeight * MIN_DISPLAY_WHEEL_RATIO;
+
+    return options.map(opt => ({
+        ...opt,
+        percentage: Math.max(getNumericWeight(opt), minDisplayWeight)
+    }));
+}
+
+function computeSegmentCoords(options) {
+    const totalWeight = options.reduce((sum, opt) => sum + getNumericWeight(opt), 0);
+    let accumulatedDegrees = 0;
+    return options.map((opt, index) => {
+        const arcDeg = (getNumericWeight(opt) / totalWeight) * 360;
+        const segment = { start: accumulatedDegrees, end: accumulatedDegrees + arcDeg, index };
+        accumulatedDegrees += arcDeg;
+        return segment;
+    });
+}
+
 /**
  * Retourne la couleur à utiliser pour une tranche donnée.
  * @param {string}  label   - Le texte de la tranche (ex : "Feu", "Starter"...)
@@ -119,12 +426,34 @@ function drawWheel(options, isType = false) {
         const arc = ((option.percentage !== undefined ? option.percentage : option.weight) / totalWeight) * Math.PI * 2;
 
         // ── Dessin du secteur ──
+        const markerAngle = currentAngle + arc / 2;
         ctx.beginPath();
         ctx.fillStyle = getColor(option.label, isType, i);
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + arc, false);
         ctx.lineTo(centerX, centerY);
         ctx.fill();
+
+        // Si la tranche est très fine, ajoute un marqueur visuel extérieur
+        const isTinySlice = arc < 0.04; // ≈ 2.3°
+        if (isTinySlice) {
+            const edgeX = centerX + Math.cos(markerAngle) * radius;
+            const edgeY = centerY + Math.sin(markerAngle) * radius;
+            const markerX = centerX + Math.cos(markerAngle) * (radius * 0.9);
+            const markerY = centerY + Math.sin(markerAngle) * (radius * 0.9);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(edgeX, edgeY);
+            ctx.lineTo(markerX, markerY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(edgeX, edgeY, 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+        }
 
         ctx.save(); // Sauvegarde l'état du contexte avant transformation (translation + rotation)
 
@@ -135,24 +464,41 @@ function drawWheel(options, isType = false) {
         ctx.shadowColor = "rgba(0,0,0,0.5)";
         ctx.shadowBlur = 5;
 
-        // Positionne le texte au milieu de l'arc, à 65% du rayon (pas trop près du centre ni du bord)
         const midAngle = currentAngle + arc / 2;
-        ctx.translate(
-            centerX + Math.cos(midAngle) * radius * 0.65,
-            centerY + Math.sin(midAngle) * radius * 0.65
-        );
-        ctx.rotate(midAngle); // Oriente le texte dans le sens de la tranche
+        const weightRatio = (option.percentage !== undefined ? option.percentage : option.weight) / totalWeight;
+        let fontSize;
+        let labelRadius;
+        let labelOutside = false;
+
+        if (weightRatio > 0.1) {
+            fontSize = 48;
+            labelRadius = radius * 0.65;
+        } else if (weightRatio > 0.04) {
+            fontSize = 32;
+            labelRadius = radius * 0.65;
+        } else if (weightRatio > 0.02) {
+            fontSize = 20;
+            labelRadius = radius * 0.75;
+        } else {
+            fontSize = 16;
+            labelRadius = radius * 0.92;
+            labelOutside = true;
+        }
+
+        // Positionne le texte au bon rayon selon la taille de la tranche.
+        const labelX = centerX + Math.cos(midAngle) * labelRadius;
+        const labelY = centerY + Math.sin(midAngle) * labelRadius;
+        ctx.translate(labelX, labelY);
+
+        if (!labelOutside) {
+            ctx.rotate(midAngle); // Oriente le texte dans le sens de la tranche
+            if (Math.cos(midAngle) < 0) ctx.rotate(Math.PI); // Garde le texte lisible sur la gauche
+        }
         ctx.textAlign    = "center";
         ctx.textBaseline = "middle";
 
-        // N'affiche le texte que si la tranche représente >4% du total
-        // (évite le chevauchement sur les très petites tranches)
-        const weightRatio = (option.percentage !== undefined ? option.percentage : option.weight) / totalWeight;
-        if (weightRatio > 0.04) {
-            let fontSize = weightRatio < 0.1 ? 34 : 48; // Police plus petite pour les petites tranches
-            ctx.font = `bold ${fontSize}px Poppins`;
-            ctx.fillText(option.label, 0, 0);
-        }
+        ctx.font = `bold ${fontSize}px Poppins`;
+        ctx.fillText(option.label, 0, 0);
 
         ctx.restore(); // Restaure l'état avant transformation pour la prochaine tranche
         currentAngle += arc; // Avance l'angle de départ pour la tranche suivante
@@ -178,6 +524,9 @@ function spinWheel(title, optionsArray, isType = false) {
         });
     }
 
+    const displayOptions = getDisplayOptions(optionsArray);
+    const displaySegments = computeSegmentCoords(displayOptions);
+
     // ── Mode normal / manuel : animation CSS + résolution après SPIN_DURATION ──
     return new Promise((resolve) => {
         isAnimating = true;
@@ -185,7 +534,7 @@ function spinWheel(title, optionsArray, isType = false) {
         winnerDisplay.textContent = "..."; // Placeholder pendant la rotation
         winnerDisplay.style.color = "white";
 
-        drawWheel(optionsArray, isType); // Dessine la roue AVANT de la faire tourner
+        drawWheel(displayOptions, isType); // Dessine la roue de visualisation
 
         // Remet la rotation CSS à sa valeur actuelle sans transition pour éviter un saut visuel
         wheelCanvas.style.transition = 'none';
@@ -196,16 +545,7 @@ function spinWheel(title, optionsArray, isType = false) {
         // ── Tirage du gagnant et calcul de l'angle cible ──
         const winner   = getRandomWeighted(optionsArray);
         const winIndex = optionsArray.indexOf(winner);
-
-        // Calcule les coordonnées angulaires (début/fin en degrés) de chaque tranche
-        const totalWeight = optionsArray.reduce((sum, opt) => sum + (opt.percentage !== undefined ? opt.percentage : opt.weight), 0);
-        let accumulatedDegrees = 0;
-        let segmentsCoords = [];
-        for (let i = 0; i < optionsArray.length; i++) {
-            let arcDeg = ((optionsArray[i].percentage !== undefined ? optionsArray[i].percentage : optionsArray[i].weight) / totalWeight) * 360;
-            segmentsCoords.push({ start: accumulatedDegrees, end: accumulatedDegrees + arcDeg, index: i });
-            accumulatedDegrees += arcDeg;
-        }
+        let segmentsCoords = displaySegments;
 
         // Choisit un point aléatoire DANS la tranche gagnante (avec marge pour ne pas tomber sur le bord)
         let winSegment    = segmentsCoords[winIndex];
@@ -271,6 +611,13 @@ function spinWheel(title, optionsArray, isType = false) {
                 winnerDisplay.style.color = '#FCD34D'; // Doré pour les résultats "rares/positifs"
             }
 
+            winnerDisplay.style.transform = 'scale(1.2)';
+            winnerDisplay.style.transition = 'transform 200ms ease-out';
+            requestAnimationFrame(() => {
+                winnerDisplay.style.transform = 'scale(1)';
+            });
+
+            launchConfetti(90);
             resolve(winner); // Résout la Promise → le flux async dans lanceDestinee() continue
         }, SPIN_DURATION + 100); // +100ms de marge pour que la transition CSS soit vraiment terminée
     });
@@ -377,7 +724,7 @@ async function lanceDestinee(mode = 'auto') {
         // ── Étape 5 : Méga-Évolution ──
         updateProgress(13);
         await waitManualClick();
-        const mega = await spinWheel("5. Transformation ?", data.mega);
+        const mega = await spinWheel("5. Méga-Evolution ?", data.mega);
         finalData.isMega = mega.label === "Oui";
         addToSummary("Méga-Evo", finalData.isMega ? "Oui" : "Non");
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
@@ -489,5 +836,21 @@ const btnManuel = document.getElementById('btn-manuel');
 if (btnManuel) btnManuel.addEventListener('click', () => lanceDestinee('manuel'));
 
 // ── Initialisation ────────────────────────────────────────────────────────────
-// Dessine la roue de Rareté au chargement de la page (état "Prêt à jouer")
-drawWheel(data.rarete);
+// Dessine la roue de Rareté au chargement de la page (état "Prêt à jouer").
+// On attend que la police Poppins soit chargée pour que le texte du canvas
+// s'affiche correctement dès le premier rendu.
+function initWheel() {
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => drawWheel(data.rarete)).catch(() => drawWheel(data.rarete));
+    } else {
+        drawWheel(data.rarete);
+    }
+}
+
+initWheel();
+
+// Si on vient de la page settings (bouton Tester), permette un aperçu rapide
+if (new URLSearchParams(location.search).get('previewConfetti') === '1') {
+    // delay léger pour que le canvas et le wrapper aient eu le temps de se dimensionner
+    setTimeout(() => launchConfetti(45), 250);
+}
