@@ -18,6 +18,13 @@ const promptOutput  = document.getElementById('prompt-output');  // Textarea du 
 const csvOutput     = document.getElementById('csv-output');     // Textarea des données CSV
 const winnerDisplay = document.getElementById('winner-display'); // Affiche le résultat en haut
 
+if (btnGenerer) {
+    btnGenerer.type = 'button';
+    btnGenerer.removeAttribute('disabled');
+    btnGenerer.style.pointerEvents = 'auto';
+    btnGenerer.classList.remove('opacity-50', 'cursor-not-allowed');
+}
+
 // ── Config Canvas ────────────────────────────────────────────────────────────
 const wheelCanvas = document.getElementById('wheel-canvas'); // L'élément <canvas> de la roue
 const ctx = wheelCanvas.getContext('2d'); // Contexte 2D pour dessiner dessus
@@ -27,6 +34,7 @@ let currentRotation = 0;    // Angle de rotation cumulé (en degrés) — ne se 
 let isAnimating = false;     // Verrou : empêche de relancer un spin pendant qu'un est en cours
 let currentMode = 'auto';    // Mode actif : 'auto' | 'rapide' | 'manuel'
 let manualResolve = null;    // Stocke la fonction resolve() d'une Promise en attente d'un clic
+let manualSessionId = 0;       // Identifie la session manuelle active
                               // (utilisé uniquement en mode manuel pour "débloquer" l'étape suivante)
 
 /**
@@ -141,29 +149,28 @@ function updateConfetti() {
 
 function launchConfetti(count = 35) {
     // Router: decide between canvas renderer and DOM renderer
-    // Read user preference or heuristic
     const storedMode = localStorage.getItem('confetti.mode') || 'auto';
     const storedIntensity = parseInt(localStorage.getItem('confetti.intensity') || '100', 10);
     const intensity = Number.isFinite(storedIntensity) ? Math.max(0, Math.min(100, storedIntensity)) : 100;
 
-    // Helper heuristic for low-end devices
-    function shouldUseCanvasAuto() {
+    const isLowEndDevice = (() => {
         try {
-            if (navigator.deviceMemory && navigator.deviceMemory < 2) return true;
-            if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) return true;
-        } catch (e) {}
-        return false;
-    }
+            return (navigator.deviceMemory && navigator.deviceMemory < 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2);
+        } catch (e) {
+            return false;
+        }
+    })();
 
-    const mode = (storedMode === 'auto') ? (shouldUseCanvasAuto() ? 'canvas' : 'dom') : storedMode;
+    const mode = storedMode === 'dom' ? 'dom' : 'canvas';
+    const safeIntensity = storedMode === 'auto' && isLowEndDevice ? Math.min(intensity, 60) : intensity;
 
     if (mode === 'canvas') {
-        launchConfettiCanvas(count, intensity);
+        launchConfettiCanvas(count, safeIntensity);
         return;
     }
 
     // Fallback to existing DOM implementation
-    const spawnCount = Math.min(Math.max(Math.round(count * intensity / 100), 10), 45);
+    const spawnCount = Math.min(Math.max(Math.round(count * safeIntensity / 140), 6), 30);
     ensureConfettiLayer();
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -215,7 +222,7 @@ function launchConfettiCanvas(count = 35, intensity = 100) {
     const width = confettiCanvas.width || wrapper.clientWidth;
     const height = confettiCanvas.height || wrapper.clientHeight;
 
-    const spawnCount = Math.min(Math.max(Math.round(count * intensity / 100), 10), 45);
+    const spawnCount = Math.min(Math.max(Math.round(count * intensity / 140), 6), 30);
 
     for (let i = 0; i < spawnCount; i++) {
         const pieceWidth = Math.random() * 8 + 5;
@@ -322,7 +329,7 @@ window.setConfettiIntensity = setConfettiIntensity;
 // En mode manuel, l'utilisateur doit cliquer sur la roue pour déclencher chaque spin.
 wheelCanvas.addEventListener('click', () => {
     // Cas 1 : on n'est pas en mode manuel → on lance tout le processus en mode manuel
-    if (currentMode !== 'manuel' && !isAnimating && !btnGenerer.disabled) {
+    if (currentMode !== 'manuel' && !isAnimating) {
         lanceDestinee('manuel');
     }
     // Cas 2 : on est déjà en mode manuel ET on attend un clic pour démarrer le prochain spin
@@ -340,8 +347,17 @@ wheelCanvas.addEventListener('click', () => {
  */
 function waitManualClick() {
     if (currentMode !== 'manuel') return Promise.resolve(); // Rien à attendre en auto/rapide
+
+    manualSessionId += 1;
+    const sessionId = manualSessionId;
+
     return new Promise(resolve => {
-        manualResolve = resolve; // La résolution sera déclenchée par le click listener ci-dessus
+        manualResolve = () => {
+            if (sessionId !== manualSessionId) return;
+            manualResolve = null;
+            resolve();
+        };
+
         titleElem.textContent = "Cliquez sur la roue";
         document.getElementById('center-circle').textContent = "Tap"; // Indique à l'utilisateur qu'il doit agir
     });
@@ -652,12 +668,17 @@ const pause = (ms) => new Promise(r => setTimeout(r, ms));
  * @param {string} mode - 'auto' | 'rapide' | 'manuel'
  */
 async function lanceDestinee(mode = 'auto') {
+    // Cancel any previous manual waiting session when switching away from manual
+    if (mode !== 'manuel' && manualResolve) {
+        manualSessionId += 1;
+        manualResolve = null;
+    }
+
     currentMode = mode;
     if (isAnimating) return; // Sécurité anti-double-clic
 
     // ── Préparation de l'UI ──
-    btnGenerer.disabled = true;
-    btnGenerer.classList.add('opacity-50', 'cursor-not-allowed');
+    btnGenerer.classList.remove('opacity-50', 'cursor-not-allowed');
     summaryList.innerHTML = ''; // Réinitialise le récapitulatif
     resultsDisplay.classList.remove('hidden');
     outputSection.classList.add('hidden'); // Cache les outputs de la session précédente
@@ -785,8 +806,7 @@ async function lanceDestinee(mode = 'auto') {
         console.error(e);
         titleElem.textContent = "Erreur de tirage";
     } finally {
-        // Toujours réactiver le bouton, même en cas d'erreur
-        btnGenerer.disabled = false;
+        // Nettoie l'état visuel et remet l'UI à sa place.
         btnGenerer.classList.remove('opacity-50', 'cursor-not-allowed');
         progression.classList.add('hidden');
     }
@@ -827,7 +847,27 @@ function generateOutputs(d) {
 }
 
 // ── Binding des boutons ───────────────────────────────────────────────────────
-btnGenerer.addEventListener('click', () => lanceDestinee('auto'));
+if (btnGenerer) {
+    btnGenerer.removeAttribute('disabled');
+    btnGenerer.style.pointerEvents = 'auto';
+    btnGenerer.classList.remove('opacity-50', 'cursor-not-allowed');
+
+    const switchToAutoMode = () => {
+        if (isAnimating) return;
+        if (currentMode === 'manuel') {
+            currentMode = 'auto';
+            if (manualResolve) {
+                manualResolve();
+                manualResolve = null;
+            }
+            return;
+        }
+        lanceDestinee('auto');
+    };
+
+    btnGenerer.addEventListener('click', switchToAutoMode);
+    btnGenerer.onclick = switchToAutoMode;
+}
 
 const btnRapide = document.getElementById('btn-rapide');
 if (btnRapide) btnRapide.addEventListener('click', () => lanceDestinee('rapide'));

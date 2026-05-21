@@ -91,17 +91,26 @@
     <!-- Ligne de deux boutons : RAPIDE (tire automatiquement une roue) et MANUEL (tire manuellement) -->
     <div class="flex gap-2 w-full max-w-sm mb-4" id="controls-row">
         <!-- Bouton RAPIDE : lance un spin sans animation longue -->
-        <button id="btn-rapide" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm">
-            ⚡ RAPIDE
+        <button id="btn-rapide" class="flex-1 flex items-center justify-center text-center bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm">
+            <span class="inline-flex items-center justify-center gap-2">
+                <span aria-hidden="true">⚡</span>
+                <span>RAPIDE</span>
+            </span>
         </button>
         <!-- Bouton MANUEL : permet de déclencher chaque roue une à une -->
-        <button id="btn-manuel" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm">
-            👆 MANUEL
+        <button id="btn-manuel" class="flex-1 flex items-center justify-center text-center bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm">
+            <span class="inline-flex items-center justify-center gap-2">
+                <span aria-hidden="true">👆</span>
+                <span>MANUEL</span>
+            </span>
         </button>
     </div>
     <!-- Bouton AUTO : enchaîne automatiquement toutes les roues (mode complet) -->
-    <button id="btn-generer" class="w-full max-w-sm bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all text-xl mb-4">
-        🤖 AUTO
+    <button id="btn-generer" class="w-full max-w-sm flex items-center justify-center text-center bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all text-xl mb-4">
+        <span class="inline-flex items-center justify-center gap-2">
+            <span aria-hidden="true">🤖</span>
+            <span>AUTO</span>
+        </span>
     </button>
     <!-- Affiche la progression actuelle (ex: "2/7") ; masqué jusqu'au démarrage -->
     <div id="progression" class="text-xs text-slate-500 mb-8 font-mono hidden">1/7</div>
