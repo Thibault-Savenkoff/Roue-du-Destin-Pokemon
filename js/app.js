@@ -509,19 +509,26 @@ function drawWheel(options, isType = false) {
         let labelOutside = false;
 
         if (weightRatio > 0.1) {
-            fontSize = 64;
+            fontSize    = 64;
             labelRadius = radius * 0.65;
         } else if (weightRatio > 0.04) {
-            fontSize = 52;
+            fontSize    = 52;
             labelRadius = radius * 0.65;
         } else if (weightRatio > 0.02) {
-            fontSize = 42;
+            fontSize    = 42;
             labelRadius = radius * 0.75;
         } else {
-            fontSize = 36;
+            fontSize    = 36;
             labelRadius = radius * 0.92;
             labelOutside = true;
         }
+
+        // Contraint la taille pour que le texte tienne dans la tranche :
+        //   - hauteur du texte ≤ largeur angulaire de la tranche (arc * labelRadius)
+        //   - longueur du texte ≤ espace radial disponible (labelRadius)
+        const maxByArc    = (arc * labelRadius) / 1.2;
+        const maxByRadial = labelRadius / (option.label.length * 0.6);
+        fontSize = Math.max(28, Math.round(Math.min(fontSize, maxByArc, maxByRadial)));
 
         // Positionne le texte au bon rayon selon la taille de la tranche.
         const labelX = centerX + Math.cos(midAngle) * labelRadius;
