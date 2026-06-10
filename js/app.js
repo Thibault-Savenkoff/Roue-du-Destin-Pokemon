@@ -888,6 +888,7 @@ if (btnGenerer) {
         if (currentMode === 'manuel' && manualResolve) {
             // Mid-sequence: continue the current sequence in auto mode
             currentMode = 'auto';
+            updateModeButtons('auto');
             manualResolve();
             manualResolve = null;
             return;
