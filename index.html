@@ -9,8 +9,6 @@
     <title>Roue du Destin - Fakemon</title>
     <!-- Tailwind CSS via CDN pour les classes utilitaires -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Feuille de style personnalisée (animations, styles spécifiques) -->
-    <link rel="stylesheet" href="css/style.css">
     <!-- Police Google Fonts : Poppins (poids 400, 600, 800) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
@@ -29,7 +27,7 @@
         }
         /* Agrandit légèrement la zone de roue pour remplir l'écran en mode TikTok */
         .tiktok-mode .w-full.max-w-sm {
-            max-w: 100%;
+            max-width: 100%;
             transform: scale(1.1);
         }
         /* Masque les boutons de contrôle en mode TikTok */
@@ -44,7 +42,7 @@
     <header class="text-center w-full max-w-sm mb-6 mt-4">
         <div class="flex justify-between w-full text-slate-400 text-xs mb-2">
             <!-- Bouton qui bascule la classe "tiktok-mode" sur le body -->
-            <button onclick="document.body.classList.toggle('tiktok-mode')" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">📱 Mode TikTok</button>
+            <button onclick="const on=document.body.classList.toggle('tiktok-mode');if(on)document.dispatchEvent(new CustomEvent('tiktok-start'));" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">📱 Mode TikTok</button>
             <!-- Lien vers la page de paramètres (settings.html) -->
             <a href="settings.html" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">⚙️ Paramètres</a>
         </div>
@@ -112,8 +110,13 @@
             <span>AUTO</span>
         </span>
     </button>
-    <!-- Affiche la progression actuelle (ex: "2/7") ; masqué jusqu'au démarrage -->
-    <div id="progression" class="text-xs text-slate-500 mb-8 font-mono hidden">1/7</div>
+    <!-- Barre de progression ; masquée jusqu'au démarrage -->
+    <div id="progression" class="w-full max-w-sm mb-8 hidden">
+        <p id="progression-text" class="text-xs text-slate-500 font-mono mb-1 text-center"></p>
+        <div class="w-full bg-slate-700 rounded-full h-1.5">
+            <div id="progression-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width:0%"></div>
+        </div>
+    </div>
 
     <!-- ===== RÉSUMÉ DES TIRAGES =====
          Panneau récapitulatif affiché après que toutes les roues ont tourné.
@@ -147,8 +150,14 @@
         </div>
     </div>
 
+    <!-- Bouton Rejouer affiché après un tirage complet -->
+    <button id="btn-rejouer" class="w-full max-w-sm hidden items-center justify-center gap-2 text-center bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm mt-4 mb-8">
+        🔄 Rejouer
+    </button>
+
     <!-- Chargement du module JS principal qui gère toute la logique de la roue -->
-    <script type="module" src="js/app.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
     <script>
         /**
          * Copie le contenu d'un textarea dans le presse-papier,
@@ -157,23 +166,28 @@
          */
         function copyToClipboard(id) {
             const textarea = document.getElementById(id);
-            textarea.select();
-            // API historique compatible avec la plupart des navigateurs
-            document.execCommand('copy');
-            // Désélectionne le texte après la copie
-            window.getSelection().removeAllRanges();
-            if (navigator.vibrate) navigator.vibrate(50);
-            
-            // Récupère le bouton "Copier" situé juste après le textarea
             const btn = textarea.nextElementSibling;
             const originalText = btn.innerText;
-            // Affiche le feedback visuel "Copié !" pendant 2 secondes
-            btn.innerText = "Copié !";
-            btn.classList.replace(id.includes('prompt') ? 'bg-blue-600' : 'bg-green-600', 'bg-slate-600');
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.classList.replace('bg-slate-600', id.includes('prompt') ? 'bg-blue-600' : 'bg-green-600');
-            }, 2000);
+            const activeColor = id.includes('prompt') ? 'bg-blue-600' : 'bg-green-600';
+
+            const showFeedback = () => {
+                if (navigator.vibrate) navigator.vibrate(50);
+                btn.innerText = "Copié !";
+                btn.classList.replace(activeColor, 'bg-slate-600');
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.replace('bg-slate-600', activeColor);
+                }, 2000);
+            };
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(textarea.value).then(showFeedback);
+            } else {
+                textarea.select();
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+                showFeedback();
+            }
         }
     </script>
 </body>

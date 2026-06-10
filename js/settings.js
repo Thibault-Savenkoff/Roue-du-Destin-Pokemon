@@ -11,7 +11,6 @@
 // Importation des données depuis le module data.js :
 //   - defaultData : les valeurs de pourcentage d'origine (non modifiables)
 //   - data        : les données courantes (depuis localStorage si elles existent, sinon defaultData)
-import { defaultData, data } from './data.js';
 
 // Référence au conteneur HTML dans lequel les sections de paramètres seront injectées
 const container = document.getElementById('settings-container');
@@ -232,9 +231,12 @@ btnSave.addEventListener('click', () => {
 btnReset.addEventListener('click', () => {
     if (confirm('Tout réinitialiser par défaut ?')) {
         localStorage.removeItem('roue-data');
-        // Copie profonde de defaultData pour repartir des valeurs initiales
         editingData = JSON.parse(JSON.stringify(defaultData));
         render();
+
+        const originalHTML = btnReset.innerHTML;
+        btnReset.innerHTML = "✅ Réinitialisé !";
+        setTimeout(() => { btnReset.innerHTML = originalHTML; }, 1500);
     }
 });
 

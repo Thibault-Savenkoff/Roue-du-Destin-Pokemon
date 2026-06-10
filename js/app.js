@@ -5,18 +5,20 @@
 // Dépend de data.js pour les tableaux de probabilités.
 // =============================================================================
 
-import { data, getRandomWeighted } from './data.js';
 
 // ── Références aux éléments du DOM ──────────────────────────────────────────
-const btnGenerer    = document.getElementById('btn-generer');     // Bouton principal "AUTO"
-const titleElem     = document.getElementById('roue-title');      // Titre affiché au-dessus de la roue
-const progression   = document.getElementById('progression');     // Indicateur "Étape X sur ~Y"
-const resultsDisplay = document.getElementById('results-display'); // Section récapitulatif
-const summaryList   = document.getElementById('summary-list');    // <ul> du récapitulatif
-const outputSection = document.getElementById('output-section'); // Section prompt + CSV
-const promptOutput  = document.getElementById('prompt-output');  // Textarea du prompt ChatGPT
-const csvOutput     = document.getElementById('csv-output');     // Textarea des données CSV
-const winnerDisplay = document.getElementById('winner-display'); // Affiche le résultat en haut
+const btnGenerer      = document.getElementById('btn-generer');
+const titleElem       = document.getElementById('roue-title');
+const progression     = document.getElementById('progression');
+const progressionText = document.getElementById('progression-text');
+const progressionBar  = document.getElementById('progression-bar');
+const resultsDisplay  = document.getElementById('results-display');
+const summaryList     = document.getElementById('summary-list');
+const outputSection   = document.getElementById('output-section');
+const promptOutput    = document.getElementById('prompt-output');
+const csvOutput       = document.getElementById('csv-output');
+const winnerDisplay   = document.getElementById('winner-display');
+const btnRejouer      = document.getElementById('btn-rejouer');
 
 if (btnGenerer) {
     btnGenerer.type = 'button';
@@ -44,6 +46,26 @@ let manualSessionId = 0;       // Identifie la session manuelle active
  */
 function vibrate(pattern) {
     if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+// ── Indicateur de mode actif ─────────────────────────────────────────────────
+function updateModeButtons(activeMode) {
+    const map = {
+        auto:   btnGenerer,
+        rapide: document.getElementById('btn-rapide'),
+        manuel: document.getElementById('btn-manuel'),
+    };
+    const rings = {
+        auto:   ['ring-2', 'ring-blue-300',   'ring-offset-2', 'ring-offset-slate-900'],
+        rapide: ['ring-2', 'ring-yellow-300', 'ring-offset-2', 'ring-offset-slate-900'],
+        manuel: ['ring-2', 'ring-green-300',  'ring-offset-2', 'ring-offset-slate-900'],
+    };
+    const allRing = ['ring-2', 'ring-blue-300', 'ring-yellow-300', 'ring-green-300', 'ring-offset-2', 'ring-offset-slate-900'];
+    for (const [mode, btn] of Object.entries(map)) {
+        if (!btn) continue;
+        btn.classList.remove(...allRing);
+        if (mode === activeMode) btn.classList.add(...rings[mode]);
+    }
 }
 
 let confettiContainer = null;
@@ -678,18 +700,21 @@ async function lanceDestinee(mode = 'auto') {
     if (isAnimating) return; // Sécurité anti-double-clic
 
     // ── Préparation de l'UI ──
+    updateModeButtons(mode);
     btnGenerer.classList.remove('opacity-50', 'cursor-not-allowed');
-    summaryList.innerHTML = ''; // Réinitialise le récapitulatif
-    resultsDisplay.classList.remove('hidden');
-    outputSection.classList.add('hidden'); // Cache les outputs de la session précédente
+    summaryList.innerHTML = '';
+    resultsDisplay.classList.add('hidden');    // Masque les résultats du tirage précédent
+    outputSection.classList.add('hidden');     // Masque les outputs du tirage précédent
+    if (btnRejouer) { btnRejouer.classList.add('hidden'); btnRejouer.classList.remove('flex'); }
     progression.classList.remove('hidden');
+    if (progressionBar) progressionBar.style.width = '0%';
 
     const finalData = {}; // Accumulera tous les résultats pour la génération finale
     let stepCount = 1;
 
-    // Met à jour l'indicateur de progression ("Étape X sur ~Y")
     function updateProgress(total) {
-        progression.textContent = `Étape ${stepCount} sur ~${total}`;
+        if (progressionText) progressionText.textContent = `Étape ${stepCount} sur ~${total}`;
+        if (progressionBar)  progressionBar.style.width  = `${Math.min(100, Math.round((stepCount / total) * 100))}%`;
         stepCount++;
     }
 
@@ -806,9 +831,11 @@ async function lanceDestinee(mode = 'auto') {
         console.error(e);
         titleElem.textContent = "Erreur de tirage";
     } finally {
-        // Nettoie l'état visuel et remet l'UI à sa place.
         btnGenerer.classList.remove('opacity-50', 'cursor-not-allowed');
         progression.classList.add('hidden');
+        updateModeButtons(null);
+        if (btnRejouer) { btnRejouer.classList.remove('hidden'); btnRejouer.classList.add('flex'); }
+        resultsDisplay.classList.remove('hidden');
     }
 }
 
@@ -873,6 +900,16 @@ if (btnRapide) btnRapide.addEventListener('click', () => lanceDestinee('rapide')
 
 const btnManuel = document.getElementById('btn-manuel');
 if (btnManuel) btnManuel.addEventListener('click', () => lanceDestinee('manuel'));
+
+// Rejouer : relance le dernier mode utilisé
+if (btnRejouer) btnRejouer.addEventListener('click', () => {
+    if (!isAnimating) lanceDestinee(currentMode || 'auto');
+});
+
+// Mode TikTok : démarre automatiquement en AUTO dès l'activation
+document.addEventListener('tiktok-start', () => {
+    if (!isAnimating) lanceDestinee('auto');
+});
 
 // ── Initialisation ────────────────────────────────────────────────────────────
 // Dessine la roue de Rareté au chargement de la page (état "Prêt à jouer").

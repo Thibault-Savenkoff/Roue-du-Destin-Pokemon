@@ -12,7 +12,7 @@
 
 // ── Données par défaut ────────────────────────────────────────────────────────
 // Exporté séparément pour permettre la réinitialisation depuis settings.js
-export const defaultData = {
+const defaultData = {
 
     // Rareté de la lignée du Fakemon (influence son "niveau" dans l'univers)
     rarete: [
@@ -89,13 +89,13 @@ export const defaultData = {
         { label: "VIT",     percentage: 16.66, key: "vit" }
     ],
 
-    // Chance d'avoir une Méga-Évolution (15% par défaut)
+    // Chance d'avoir une Méga-Évolution
     mega: [
         { label: "Oui", percentage: 4.5 },
         { label: "Non", percentage: 95.5 }
     ],
 
-    // Chance d'être un Pokémon Shiny (5% par défaut, fidèle à l'esprit des jeux)
+    // Chance d'être un Pokémon Shiny (0.0244% ≈ 1/4096, fidèle aux jeux)
     shiny: [
         { label: "Oui", percentage:  0.0244 },
         { label: "Non", percentage: 99.9756 }
@@ -107,7 +107,7 @@ export const defaultData = {
 // elles sont lues depuis localStorage (clé 'roue-data').
 // Sinon, on utilise defaultData.
 // C'est cet export `data` qu'app.js utilise pour tous les tirages.
-export const data = JSON.parse(localStorage.getItem('roue-data')) || defaultData;
+const data = JSON.parse(localStorage.getItem('roue-data')) || defaultData;
 
 // ── Tirage pondéré ─────────────────────────────────────────────────────────────
 /**
@@ -121,7 +121,7 @@ export const data = JSON.parse(localStorage.getItem('roue-data')) || defaultData
  * @param {Array} items - Tableau d'objets { label, percentage } ou { label, weight }
  * @returns {Object}    - L'élément tiré au sort
  */
-export function getRandomWeighted(items) {
+function getRandomWeighted(items) {
     const totalWeight = items.reduce((sum, item) => sum + (item.percentage !== undefined ? item.percentage : item.weight), 0);
     let random = Math.random() * totalWeight; // Nombre entre 0 et totalWeight
 
