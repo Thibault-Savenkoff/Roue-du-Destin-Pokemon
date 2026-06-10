@@ -626,6 +626,7 @@ function spinWheel(title, optionsArray, isType = false) {
 
             if (currentSegment !== lastSegment && lastSegment !== -1) {
                 vibrate(10);
+                playTick();
             }
             lastSegment = currentSegment;
 
@@ -655,6 +656,7 @@ function spinWheel(title, optionsArray, isType = false) {
                 winnerDisplay.style.transform = 'scale(1)';
             });
 
+            playReveal();
             launchConfetti(90);
             resolve(winner); // Résout la Promise → le flux async dans lanceDestinee() continue
         }, SPIN_DURATION + 100); // +100ms de marge pour que la transition CSS soit vraiment terminée
@@ -818,6 +820,7 @@ async function lanceDestinee(mode = 'auto') {
         finalData.isShiny = shiny.label === "Oui";
         if (finalData.isShiny) {
             addToSummary("Shiny", "✨ OUI ✨", true);
+            playShiny();
         } else {
             addToSummary("Shiny", "Non");
         }
@@ -825,6 +828,7 @@ async function lanceDestinee(mode = 'auto') {
 
         // ── Fin du tirage ──
         titleElem.textContent = "Destinée Générée !";
+        playFanfare();
         generateOutputs(finalData); // Construit et affiche le prompt + le CSV
 
     } catch (e) {
