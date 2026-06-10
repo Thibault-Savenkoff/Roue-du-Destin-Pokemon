@@ -854,12 +854,11 @@ if (btnGenerer) {
 
     const switchToAutoMode = () => {
         if (isAnimating) return;
-        if (currentMode === 'manuel') {
+        if (currentMode === 'manuel' && manualResolve) {
+            // Mid-sequence: continue the current sequence in auto mode
             currentMode = 'auto';
-            if (manualResolve) {
-                manualResolve();
-                manualResolve = null;
-            }
+            manualResolve();
+            manualResolve = null;
             return;
         }
         lanceDestinee('auto');
