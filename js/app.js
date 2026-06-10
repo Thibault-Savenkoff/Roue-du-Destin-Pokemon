@@ -509,16 +509,16 @@ function drawWheel(options, isType = false) {
         let labelOutside = false;
 
         if (weightRatio > 0.1) {
-            fontSize = 48;
+            fontSize = 64;
             labelRadius = radius * 0.65;
         } else if (weightRatio > 0.04) {
-            fontSize = 32;
+            fontSize = 52;
             labelRadius = radius * 0.65;
         } else if (weightRatio > 0.02) {
-            fontSize = 20;
+            fontSize = 42;
             labelRadius = radius * 0.75;
         } else {
-            fontSize = 16;
+            fontSize = 36;
             labelRadius = radius * 0.92;
             labelOutside = true;
         }
