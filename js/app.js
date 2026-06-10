@@ -33,8 +33,9 @@ const ctx = wheelCanvas.getContext('2d'); // Contexte 2D pour dessiner dessus
 
 let currentRotation = 0;    // Angle de rotation cumulé (en degrés) — ne se reset jamais pour
                               // que la roue reparte de sa position actuelle à chaque spin
-let isAnimating = false;     // Verrou : empêche de relancer un spin pendant qu'un est en cours
-let currentMode = 'auto';    // Mode actif : 'auto' | 'rapide' | 'manuel'
+let isAnimating = false;        // Verrou : empêche de relancer un spin pendant qu'un est en cours
+let isSequenceRunning = false;  // Vrai pendant qu'une destinée est en cours (y compris les pauses)
+let currentMode = 'auto';       // Mode actif : 'auto' | 'rapide' | 'manuel'
 let manualResolve = null;    // Stocke la fonction resolve() d'une Promise en attente d'un clic
 let manualSessionId = 0;       // Identifie la session manuelle active
                               // (utilisé uniquement en mode manuel pour "débloquer" l'étape suivante)
@@ -705,8 +706,9 @@ async function lanceDestinee(mode = 'auto') {
         manualResolve = null;
     }
 
-    currentMode = mode;
     if (isAnimating) return; // Sécurité anti-double-clic
+    currentMode = mode;
+    isSequenceRunning = true;
 
     // ── Préparation de l'UI ──
     updateModeButtons(mode);
@@ -842,6 +844,7 @@ async function lanceDestinee(mode = 'auto') {
         console.error(e);
         titleElem.textContent = "Erreur de tirage";
     } finally {
+        isSequenceRunning = false;
         btnGenerer.classList.remove('opacity-50', 'cursor-not-allowed');
         progression.classList.add('hidden');
         updateModeButtons(null);
@@ -911,7 +914,15 @@ const btnRapide = document.getElementById('btn-rapide');
 if (btnRapide) btnRapide.addEventListener('click', () => lanceDestinee('rapide'));
 
 const btnManuel = document.getElementById('btn-manuel');
-if (btnManuel) btnManuel.addEventListener('click', () => lanceDestinee('manuel'));
+if (btnManuel) btnManuel.addEventListener('click', () => {
+    if (isAnimating) return;
+    if (isSequenceRunning) {
+        currentMode = 'manuel';
+        updateModeButtons('manuel');
+        return;
+    }
+    lanceDestinee('manuel');
+});
 
 // Rejouer : relance le dernier mode utilisé
 if (btnRejouer) btnRejouer.addEventListener('click', () => {
