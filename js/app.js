@@ -1027,14 +1027,14 @@ function generateOutputs(d) {
     promptOutputV2.value = promptV2;
 
     outputSection.classList.remove('hidden');
-    saveToHistory(d);
+    saveToHistory(d, promptV2);
     updateCounter();
 
     vibrate([100, 50, 100, 50, 400]);
 }
 
 // ── Historique & Compteur ─────────────────────────────────────────────────────
-function saveToHistory(d) {
+function saveToHistory(d, prompt) {
     const history = JSON.parse(localStorage.getItem('roue-history') || '[]');
     const types = d.isDouble ? `${d.type1} / ${d.type2}` : d.type1;
     const bst = d.stats.hp + d.stats.atk + d.stats.def + d.stats.spa + d.stats.spd + d.stats.vit;
@@ -1047,6 +1047,8 @@ function saveToHistory(d) {
         bst,
         isMega: d.isMega,
         isShiny: d.isShiny,
+        summaryHTML: summaryList.innerHTML,
+        prompt,
     });
     if (history.length > 10) history.pop();
     localStorage.setItem('roue-history', JSON.stringify(history));
@@ -1058,18 +1060,43 @@ function renderHistory() {
     if (!historyList || !historySection) return;
     if (history.length === 0) { historySection.classList.add('hidden'); return; }
     historySection.classList.remove('hidden');
-    historyList.innerHTML = history.map(h => {
+    historyList.innerHTML = history.map((h, i) => {
         const badges = [h.isMega ? '⚡Méga' : '', h.isShiny ? '✨Shiny' : ''].filter(Boolean).join(' ');
-        return `<div class="bg-slate-800 rounded-xl p-3 border border-slate-700 text-xs text-slate-300 flex justify-between items-start gap-2">
-            <div>
-                <span class="font-bold text-white">${h.rarete}</span>
-                <span class="text-slate-500 ml-2">${h.date}</span><br>
-                <span>${h.types}</span> · <span class="text-slate-400">${h.evolution}</span> · <span class="text-slate-400">${h.region}</span>
-                ${badges ? `<br><span class="text-yellow-400">${badges}</span>` : ''}
+        return `<div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <button onclick="toggleHistoryEntry(${i})" class="w-full p-3 text-xs text-left flex justify-between items-start gap-2 hover:bg-slate-700 transition-colors">
+                <div>
+                    <span class="font-bold text-white">${h.rarete}</span>
+                    <span class="text-slate-500 ml-2">${h.date}</span><br>
+                    <span class="text-slate-300">${h.types}</span> · <span class="text-slate-400">${h.evolution}</span> · <span class="text-slate-400">${h.region}</span>
+                    ${badges ? `<br><span class="text-yellow-400">${badges}</span>` : ''}
+                </div>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                    <span class="text-slate-400 font-mono">BST ${h.bst}</span>
+                    <span id="chevron-${i}" class="text-slate-500">▼</span>
+                </div>
+            </button>
+            <div id="history-detail-${i}" class="hidden px-3 pb-3 border-t border-slate-700">
+                <ul class="text-sm space-y-2 text-slate-300 mt-3">${h.summaryHTML || ''}</ul>
+                ${h.prompt ? `<button onclick="copyHistoryPrompt(${i})" class="mt-3 w-full bg-purple-700 hover:bg-purple-600 text-white text-xs font-bold py-2 rounded-lg transition-all">📋 Copier le prompt</button>` : ''}
             </div>
-            <span class="text-slate-400 font-mono whitespace-nowrap">BST ${h.bst}</span>
         </div>`;
     }).join('');
+}
+
+function toggleHistoryEntry(i) {
+    const detail = document.getElementById(`history-detail-${i}`);
+    const chevron = document.getElementById(`chevron-${i}`);
+    const open = detail.classList.toggle('hidden');
+    chevron.textContent = open ? '▼' : '▲';
+}
+
+function copyHistoryPrompt(i) {
+    const history = JSON.parse(localStorage.getItem('roue-history') || '[]');
+    const btn = document.querySelector(`#history-detail-${i} button`);
+    if (!history[i]?.prompt) return;
+    const showFeedback = () => { const o = btn.innerText; btn.innerText = '✅ Copié !'; setTimeout(() => btn.innerText = o, 2000); };
+    if (navigator.clipboard) navigator.clipboard.writeText(history[i].prompt).then(showFeedback);
+    else { const ta = document.createElement('textarea'); ta.value = history[i].prompt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showFeedback(); }
 }
 
 function updateCounter() {
