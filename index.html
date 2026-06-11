@@ -142,6 +142,13 @@
             <button onclick="copyToClipboard('prompt-output')" class="absolute top-3 right-3 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded">Copier</button>
         </div>
 
+        <!-- Zone 1b : Prompt amélioré (version test) -->
+        <div class="bg-slate-800 rounded-xl p-4 border border-purple-900 relative">
+            <h3 class="text-sm font-bold text-purple-400 mb-2">Prompt amélioré <span class="text-slate-500 font-normal">(test)</span></h3>
+            <textarea id="prompt-output-v2" readonly class="w-full bg-slate-900 text-slate-300 text-xs p-3 rounded border border-slate-700 h-48 focus:outline-none resize-none"></textarea>
+            <button onclick="copyToClipboard('prompt-output-v2')" class="absolute top-3 right-3 bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 py-1 rounded">Copier</button>
+        </div>
+
         <!-- Zone 2 : Données structurées au format CSV (pour une utilisation dans un tableur, etc.) -->
         <div class="bg-slate-800 rounded-xl p-4 border border-green-900 relative">
             <h3 class="text-sm font-bold text-green-400 mb-2">Données CSV</h3>

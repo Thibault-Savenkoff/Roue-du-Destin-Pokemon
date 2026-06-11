@@ -16,6 +16,7 @@ const resultsDisplay  = document.getElementById('results-display');
 const summaryList     = document.getElementById('summary-list');
 const outputSection   = document.getElementById('output-section');
 const promptOutput    = document.getElementById('prompt-output');
+const promptOutputV2  = document.getElementById('prompt-output-v2');
 const csvOutput       = document.getElementById('csv-output');
 const winnerDisplay   = document.getElementById('winner-display');
 const btnRejouer      = document.getElementById('btn-rejouer');
@@ -938,6 +939,34 @@ function generateOutputs(d) {
     if (d.isShiny) prompt += `\n- Shiny`;
 
     promptOutput.value = prompt;
+
+    // ── Prompt amélioré (version test) ──
+    const rarityContext = {
+        'Starter':    'Pokémon de départ — accessible, iconique, avec une belle progression en évoluant.',
+        'Légendaire': 'Pokémon légendaire ou mythique — imposant, rare, chargé de lore.',
+        'Fabuleux':   'Pseudo-légendaire ou Ultra-Chimère — très puissant, design marquant et singulier.',
+        'Aucun':      'Pokémon standard — équilibré, crédible dans un Pokédex classique.',
+    };
+    const rarityHint = rarityContext[d.rarete] || '';
+    const statProfile = `PV ${d.stats.hp} | ATK ${d.stats.atk} | DEF ${d.stats.def} | ATK.SPE ${d.stats.spa} | DEF.SPE ${d.stats.spd} | VIT ${d.stats.vit}`;
+
+    let promptV2 = `Crée un Fakemon (Pokémon original et fictif) en respectant ces caractéristiques :\n`;
+    promptV2 += `\n【 Caractéristiques imposées 】`;
+    promptV2 += `\n- Lignée : ${d.rarete}${rarityHint ? ` — ${rarityHint}` : ''}`;
+    promptV2 += `\n- Type(s) : ${typeString}`;
+    promptV2 += `\n- Stats de base : ${statProfile}  (Total : ${totalStats})`;
+    if (d.isMega)  promptV2 += `\n- Méga-Évolution disponible (les stats ci-dessus incluent déjà les boosts)`;
+    if (d.isShiny) promptV2 += `\n- Version Shiny`;
+
+    promptV2 += `\n\n【 À générer 】`;
+    promptV2 += `\n1. Nom + courte étymologie`;
+    promptV2 += `\n2. Apparence (forme, couleurs, traits marquants)`;
+    promptV2 += `\n3. Entrée Pokédex (2 phrases, style officiel)`;
+    promptV2 += `\n4. 2 talents (dont 1 caché) adaptés aux types et stats`;
+    promptV2 += `\n5. 4 attaques emblématiques`;
+
+    if (promptOutputV2) promptOutputV2.value = promptV2;
+
     outputSection.classList.remove('hidden'); // Révèle la section outputs
 
     vibrate([100, 50, 100, 50, 400]);
