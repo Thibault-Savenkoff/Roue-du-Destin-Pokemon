@@ -14,26 +14,52 @@
 
     <style>
         /* === MODE TIKTOK ===
-           En mode TikTok, on masque les éléments non essentiels pour
-           afficher uniquement la roue en plein écran (idéal pour les vidéos). */
-        .tiktok-mode header, .tiktok-mode #results-display, .tiktok-mode #output-section {
+           Optimisé pour filmer l'écran en portrait.
+           On garde : la roue, le winner, la progression visuelle, et le résumé final (révélation).
+           On masque : tout le reste (header, boutons, prompts, historique...). */
+
+        .tiktok-mode header,
+        .tiktok-mode #output-section,
+        .tiktok-mode #controls-row,
+        .tiktok-mode #btn-generer,
+        .tiktok-mode #btn-rejouer,
+        .tiktok-mode #history-section,
+        .tiktok-mode #progression-text,
+        .tiktok-mode #counter-display,
+        .tiktok-mode #results-display button { /* masque "Copier le résumé" */
             display: none !important;
         }
-        /* Centre verticalement le contenu et supprime les marges en mode TikTok */
+
+        /* Centrage vertical plein écran */
         .tiktok-mode {
-            justify-content: center !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
+            justify-content: flex-start !important;
+            padding-top: 1.5rem !important;
+            padding-bottom: 1.5rem !important;
+            gap: 0 !important;
         }
-        /* Agrandit légèrement la zone de roue pour remplir l'écran en mode TikTok */
+
+        /* Roue agrandie pour remplir l'écran portrait */
         .tiktok-mode .w-full.max-w-sm {
             max-width: 100%;
-            transform: scale(1.1);
+            transform: scale(1.15);
+            transform-origin: top center;
+            margin-bottom: 2rem;
         }
-        /* Masque les boutons de contrôle en mode TikTok */
-        .tiktok-mode #controls-row, .tiktok-mode #btn-generer {
-            display: none !important;
+
+        /* Winner display plus grand et plus visible */
+        .tiktok-mode #winner-display {
+            font-size: 2rem !important;
+            min-height: 3.5rem !important;
         }
+
+        /* Titre de la roue un peu plus grand */
+        .tiktok-mode #roue-title {
+            font-size: 0.9rem !important;
+            height: auto !important;
+        }
+
+        /* Résumé du tirage visible en TikTok (révélation finale) */
+        /* La visibilité est gérée par le JS — on retire juste le display:none forcé */
     </style>
 </head>
 <body class="font-['Poppins'] flex flex-col items-center justify-start min-h-screen p-4 pb-12 overflow-x-hidden">
