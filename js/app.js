@@ -778,14 +778,18 @@ async function lanceDestinee(mode = 'auto') {
             if (currentMode === 'auto') await pause(1000); // Pause plus courte entre les stats
         }
 
-        // ── Bonus Starter : +10 sur 3 stats aléatoires ──
+        // ── Bonus Starter : +10 sur 3 stats tirées par roue ──
         if (finalData.rarete === 'Starter') {
-            const starterStats = [...data.statsNames].sort(() => Math.random() - 0.5).slice(0, 3);
-            starterStats.forEach(stat => {
-                finalData.stats[stat.key] += 10;
-                addToSummary(`Bonus Starter (${stat.label})`, `+10 → ${finalData.stats[stat.key]}`, true);
-            });
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            let starterPool = [...data.statsNames];
+            for (let i = 1; i <= 3; i++) {
+                updateProgress(13);
+                await waitManualClick();
+                const pickedStat = await spinWheel(`Starter : Stat boostée ${i}`, starterPool);
+                finalData.stats[pickedStat.key] += 10;
+                addToSummary(`Bonus Starter ${i} (${pickedStat.label})`, `+10 → ${finalData.stats[pickedStat.key]}`, true);
+                starterPool = starterPool.filter(s => s.key !== pickedStat.key);
+                if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            }
         }
 
         // ── Bonus Légendaire / Fabuleux : 2 stats boostées par roue ──
