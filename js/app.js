@@ -871,8 +871,10 @@ async function lanceDestinee(mode = 'auto') {
             addToSummary(`Boost Méga ${boost1.label}`, `+${boostVal1.value} (Total: ${finalData.stats[boost1.key]})`, true);
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
-            // ── Roue : quelle stat est boostée en second ? (exclut PV et la première) ──
-            const statsNamesPool2 = data.statsNames.filter(s => s.key !== 'hp' && s.key !== boost1.key);
+            // ── Roue : quelle stat est boostée en second ? (PV exclu ; boost1 grisé) ──
+            const statsNamesPool2 = data.statsNames
+                .filter(s => s.key !== 'hp')
+                .map(s => s.key === boost1.key ? { ...s, percentage: 0, grayed: true } : { ...s });
             updateProgress(estimatedTotal);
             await waitManualClick();
             const boost2 = await spinWheel("Méga : Stat boostée 2", statsNamesPool2);
