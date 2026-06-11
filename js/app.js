@@ -859,6 +859,24 @@ async function lanceDestinee(mode = 'auto') {
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
         }
 
+        // ── Boosts d'évolution automatiques ──
+        // Appliqués après les bonus de rareté — stade 1 = stats actuelles, stade final = stats boostées
+        const EVO_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'vit'];
+        finalData.preEvoStats = { ...finalData.stats };
+
+        if (finalData.evolution === '2 stades') {
+            EVO_KEYS.forEach(k => finalData.stats[k] += 15);
+            addToSummary('↑ Évolution', '+15 à chaque stat', true);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        } else if (finalData.evolution === '3 stades') {
+            EVO_KEYS.forEach(k => finalData.stats[k] += 10);
+            finalData.stage2Stats = { ...finalData.stats };
+            addToSummary('↑ 1ère évolution', '+10 à chaque stat', true);
+            EVO_KEYS.forEach(k => finalData.stats[k] += 15);
+            addToSummary('↑ 2ème évolution', '+15 à chaque stat', true);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        }
+
         // ── Étape 5 : Méga-Évolution ──
         updateProgress(estimatedTotal);
         await waitManualClick();
@@ -978,7 +996,16 @@ function generateOutputs(d) {
     promptV2 += `\n【 Caractéristiques imposées 】`;
     promptV2 += `\n- Lignée : ${d.rarete}${rarityHint ? ` — ${rarityHint}` : ''}`;
     promptV2 += `\n- Type(s) : ${typeString}`;
-    promptV2 += `\n- Évolution : ${d.evolution}`;
+    // Progression BST selon le stade d'évolution
+    const bstOf = stats => ['hp','atk','def','spa','spd','vit'].reduce((s,k) => s + stats[k], 0);
+    let evoLine = d.evolution;
+    if (d.evolution === '2 stades' && d.preEvoStats) {
+        evoLine = `2 stades — BST ${bstOf(d.preEvoStats)} (stade 1) → +15/stat → BST ${baseBST} (stade 2/final)`;
+    } else if (d.evolution === '3 stades' && d.preEvoStats && d.stage2Stats) {
+        const s2bst = bstOf(d.stage2Stats);
+        evoLine = `3 stades — BST ${bstOf(d.preEvoStats)} (stade 1) → +10/stat → BST ${s2bst} (stade 2) → +15/stat → BST ${baseBST} (stade 3/final)`;
+    }
+    promptV2 += `\n- Évolution : ${evoLine}`;
     promptV2 += `\n- Région d'origine : ${d.region}`;
     promptV2 += `\n- Stats de base : ${statProfile}  (Total : ${baseBST})`;
     if (d.isMega) {
