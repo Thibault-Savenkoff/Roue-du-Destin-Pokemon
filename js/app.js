@@ -467,7 +467,7 @@ function drawWheel(options, isType = false) {
         // ── Dessin du secteur ──
         const markerAngle = currentAngle + arc / 2;
         ctx.beginPath();
-        ctx.fillStyle = getColor(option.label, isType, i);
+        ctx.fillStyle = option.grayed ? '#4b5563' : getColor(option.label, isType, i);
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + arc, false);
         ctx.lineTo(centerX, centerY);
@@ -497,9 +497,12 @@ function drawWheel(options, isType = false) {
         ctx.save(); // Sauvegarde l'état du contexte avant transformation (translation + rotation)
 
         // ── Couleur du texte ──
-        // Electrique et Normal sont clairs → texte foncé pour la lisibilité ; reste = blanc
-        ctx.fillStyle = isType && (option.label === 'Electrique' || option.label === 'Normal') ? '#1e293b' : 'white';
-        if (!isType) ctx.fillStyle = 'white';
+        if (option.grayed) {
+            ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        } else {
+            ctx.fillStyle = isType && (option.label === 'Electrique' || option.label === 'Normal') ? '#1e293b' : 'white';
+            if (!isType) ctx.fillStyle = 'white';
+        }
         ctx.shadowColor = "rgba(0,0,0,0.5)";
         ctx.shadowBlur = 5;
 
@@ -780,14 +783,16 @@ async function lanceDestinee(mode = 'auto') {
 
         // ── Bonus Starter : +10 sur 3 stats tirées par roue ──
         if (finalData.rarete === 'Starter') {
-            let starterPool = [...data.statsNames];
+            let starterPool = data.statsNames.map(s => ({ ...s }));
             for (let i = 1; i <= 3; i++) {
                 updateProgress(13);
                 await waitManualClick();
                 const pickedStat = await spinWheel(`Starter : Stat boostée ${i}`, starterPool);
                 finalData.stats[pickedStat.key] += 10;
                 addToSummary(`Bonus Starter ${i} (${pickedStat.label})`, `+10 → ${finalData.stats[pickedStat.key]}`, true);
-                starterPool = starterPool.filter(s => s.key !== pickedStat.key);
+                // Grise la stat choisie pour les roues suivantes (sans la retirer)
+                const idx = starterPool.findIndex(s => s.key === pickedStat.key);
+                if (idx !== -1) starterPool[idx] = { ...starterPool[idx], percentage: 0, grayed: true };
                 if (currentMode === 'auto') await pause(PAUSE_DURATION);
             }
         }
