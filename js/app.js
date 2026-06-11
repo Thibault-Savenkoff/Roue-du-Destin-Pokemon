@@ -749,50 +749,49 @@ async function lanceDestinee(mode = 'auto') {
         if (finalData.rarete === 'Légendaire' || finalData.rarete === 'Fabuleux') estimatedTotal += 4;
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
-        // ── Étape 2 : Double Type ? ──
+        // ── Étape 2 : Stade d'évolution ──
         updateProgress(estimatedTotal);
         await waitManualClick();
-        const isDoubleType = await spinWheel("2. Double Type ?", data.doubleType);
-        finalData.isDouble = isDoubleType.label === "Oui";
-        if (finalData.isDouble) estimatedTotal += 1;
-        if (currentMode === 'auto') await pause(PAUSE_DURATION);
-
-        // ── Étape 3 : Type Principal ──
-        updateProgress(estimatedTotal);
-        await waitManualClick();
-        const type1 = await spinWheel("3. Type Principal", data.types, true);
-        finalData.type1 = type1.label;
-        addToSummary("Type 1", `<span style="color:${typeColors[type1.label]}">${type1.label}</span>`);
-
-        // ── Étape 3b (conditionnelle) : Type Secondaire ──
-        if (finalData.isDouble) {
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
-            updateProgress(estimatedTotal);
-            // Exclut le type 1 déjà tiré pour éviter un doublon
-            let optionsType2 = data.types.filter(t => t.label !== finalData.type1);
-            await waitManualClick();
-            const type2 = await spinWheel("3b. Type Secondaire", optionsType2, true);
-            finalData.type2 = type2.label;
-            addToSummary("Type 2", `<span style="color:${typeColors[type2.label]}">${type2.label}</span>`);
-        } else {
-            finalData.type2 = "Aucun"; // Pas de second type
-        }
-        if (currentMode === 'auto') await pause(PAUSE_DURATION);
-
-        // ── Étape 4 : Stade d'évolution ──
-        updateProgress(estimatedTotal);
-        await waitManualClick();
-        const evoStage = await spinWheel("4. Stade d'évolution", data.evolutionStages);
+        const evoStage = await spinWheel("2. Stade d'évolution", data.evolutionStages);
         finalData.evolution = evoStage.label;
         addToSummary("Évolution", finalData.evolution);
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
-        // ── Étape 5 : Région d'origine ──
+        // ── Étape 3 : Région d'origine ──
         updateProgress(estimatedTotal);
         await waitManualClick();
-        const region = await spinWheel("5. Région d'origine", data.regions);
+        const region = await spinWheel("3. Région d'origine", data.regions);
         finalData.region = region.label;
         addToSummary("Région", finalData.region);
+        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+
+        // ── Étape 4 : Double Type ? ──
+        updateProgress(estimatedTotal);
+        await waitManualClick();
+        const isDoubleType = await spinWheel("4. Double Type ?", data.doubleType);
+        finalData.isDouble = isDoubleType.label === "Oui";
+        if (finalData.isDouble) estimatedTotal += 1;
+        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+
+        // ── Étape 5 : Type Principal ──
+        updateProgress(estimatedTotal);
+        await waitManualClick();
+        const type1 = await spinWheel("5. Type Principal", data.types, true);
+        finalData.type1 = type1.label;
+        addToSummary("Type 1", `<span style="color:${typeColors[type1.label]}">${type1.label}</span>`);
+
+        // ── Étape 5b (conditionnelle) : Type Secondaire ──
+        if (finalData.isDouble) {
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            updateProgress(estimatedTotal);
+            let optionsType2 = data.types.filter(t => t.label !== finalData.type1);
+            await waitManualClick();
+            const type2 = await spinWheel("5b. Type Secondaire", optionsType2, true);
+            finalData.type2 = type2.label;
+            addToSummary("Type 2", `<span style="color:${typeColors[type2.label]}">${type2.label}</span>`);
+        } else {
+            finalData.type2 = "Aucun";
+        }
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
         // ── Étape 6 : Stats (une roue par stat, 6 au total) ──
@@ -800,7 +799,7 @@ async function lanceDestinee(mode = 'auto') {
         for (const stat of data.statsNames) {
             updateProgress(estimatedTotal);
             await waitManualClick();
-            const pulledStat = await spinWheel(`4. Stat : ${stat.label}`, data.statsValues);
+            const pulledStat = await spinWheel(`6. Stat : ${stat.label}`, data.statsValues);
             finalData.stats[stat.key] = pulledStat.value; // Stocke par clé (hp, atk, def, spa, spd, vit)
             addToSummary(stat.label, finalData.stats[stat.key]);
             if (currentMode === 'auto') await pause(1000); // Pause plus courte entre les stats

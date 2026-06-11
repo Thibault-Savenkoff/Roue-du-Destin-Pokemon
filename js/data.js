@@ -92,9 +92,9 @@ const defaultData = {
 
     // Stade d'évolution du Fakemon
     evolutionStages: [
-        { label: "Forme unique",   percentage: 20 },
-        { label: "2 stades",       percentage: 50 },
-        { label: "3 stades",       percentage: 30 },
+        { label: "Forme unique", percentage: 33 },
+        { label: "2 stades",     percentage: 33 },
+        { label: "3 stades",     percentage: 34 },
     ],
 
     // Région d'origine du Fakemon
