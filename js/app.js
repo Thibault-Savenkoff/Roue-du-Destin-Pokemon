@@ -944,7 +944,7 @@ function generateOutputs(d) {
 
     // ── CSV ──
     const csvHeader = "Rareté,Type 1,Type 2,PV,ATT,DEF,ATT.Spe,DEF.Spe,VIT,Total,Méga-Evo,Shiny";
-    const csvRow    = `${d.rarete},${d.type1},${d.type2},${d.stats.hp},${d.stats.atk},${d.stats.def},${d.stats.spa},${d.stats.spd},${d.stats.vit},${totalStats},${d.isMega ? 'Oui' : 'Non'},${d.isShiny ? 'Oui' : 'Non'}`;
+    const csvRow    = `${d.rarete},${d.type1},${d.type2},${d.stats.hp},${d.stats.atk},${d.stats.def},${d.stats.spa},${d.stats.spd},${d.stats.vit},${megaBST},${d.isMega ? 'Oui' : 'Non'},${d.isShiny ? 'Oui' : 'Non'}`;
     csvOutput.value = `${csvHeader}\n${csvRow}`;
 
     // ── Prompt ChatGPT ──
