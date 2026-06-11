@@ -411,12 +411,14 @@ function getNumericWeight(option) {
 }
 
 function getDisplayOptions(options) {
-    const totalWeight = options.reduce((sum, opt) => sum + getNumericWeight(opt), 0);
-    const minDisplayWeight = totalWeight * MIN_DISPLAY_WHEEL_RATIO;
+    const nonGrayed = options.filter(opt => !opt.grayed);
+    const activeWeight = nonGrayed.reduce((sum, opt) => sum + getNumericWeight(opt), 0);
+    const avgWeight = nonGrayed.length > 0 ? activeWeight / nonGrayed.length : 1;
+    const minDisplayWeight = activeWeight * MIN_DISPLAY_WHEEL_RATIO;
 
     return options.map(opt => ({
         ...opt,
-        percentage: Math.max(getNumericWeight(opt), minDisplayWeight)
+        percentage: opt.grayed ? avgWeight : Math.max(getNumericWeight(opt), minDisplayWeight)
     }));
 }
 
