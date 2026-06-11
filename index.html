@@ -134,17 +134,9 @@
          Section affichée uniquement après la fin d'un tirage complet (AUTO).
          Contient deux zones de texte en lecture seule avec boutons "Copier". -->
     <div id="output-section" class="w-full max-w-sm space-y-6 hidden">
-        <!-- Zone 1 : Prompt prêt à coller dans ChatGPT pour générer un Fakemon -->
-        <div class="bg-slate-800 rounded-xl p-4 border border-blue-900 relative">
-            <h3 class="text-sm font-bold text-blue-400 mb-2">Prompt ChatGPT</h3>
-            <textarea id="prompt-output" readonly class="w-full bg-slate-900 text-slate-300 text-xs p-3 rounded border border-slate-700 h-32 focus:outline-none resize-none"></textarea>
-            <!-- Bouton qui appelle copyToClipboard() avec l'ID du textarea -->
-            <button onclick="copyToClipboard('prompt-output')" class="absolute top-3 right-3 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded">Copier</button>
-        </div>
-
-        <!-- Zone 1b : Prompt amélioré (version test) -->
+        <!-- Prompt ChatGPT -->
         <div class="bg-slate-800 rounded-xl p-4 border border-purple-900 relative">
-            <h3 class="text-sm font-bold text-purple-400 mb-2">Prompt amélioré <span class="text-slate-500 font-normal">(test)</span></h3>
+            <h3 class="text-sm font-bold text-purple-400 mb-2">Prompt ChatGPT</h3>
             <textarea id="prompt-output-v2" readonly class="w-full bg-slate-900 text-slate-300 text-xs p-3 rounded border border-slate-700 h-48 focus:outline-none resize-none"></textarea>
             <button onclick="copyToClipboard('prompt-output-v2')" class="absolute top-3 right-3 bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 py-1 rounded">Copier</button>
         </div>

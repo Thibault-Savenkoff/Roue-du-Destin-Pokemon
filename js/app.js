@@ -15,7 +15,6 @@ const progressionBar  = document.getElementById('progression-bar');
 const resultsDisplay  = document.getElementById('results-display');
 const summaryList     = document.getElementById('summary-list');
 const outputSection   = document.getElementById('output-section');
-const promptOutput    = document.getElementById('prompt-output');
 const promptOutputV2  = document.getElementById('prompt-output-v2');
 const csvOutput       = document.getElementById('csv-output');
 const winnerDisplay   = document.getElementById('winner-display');
@@ -948,23 +947,6 @@ function generateOutputs(d) {
     csvOutput.value = `${csvHeader}\n${csvRow}`;
 
     // ── Prompt ChatGPT ──
-    let prompt = `Génère moi un pokémon avec ses stats là :
-- Rareté / Lignée : ${d.rarete}
-- Type(s) : ${typeString}
-- Base Stats Total : ${baseBST} (Profil : PV ${baseStats.hp}, ATK ${baseStats.atk}, DEF ${baseStats.def}, ATK SPE ${baseStats.spa}, DEF SPE ${baseStats.spd}, VIT ${baseStats.vit})`;
-
-    if (d.isMega) {
-        const megaLines = Object.entries(d.megaBoosts).map(([k, v]) => {
-            const label = { hp:'PV', atk:'ATK', def:'DEF', spa:'ATK SPE', spd:'DEF SPE', vit:'VIT' }[k];
-            return `${label} ${baseStats[k]} → ${d.stats[k]} (+${v})`;
-        }).join(', ');
-        prompt += `\n- Méga-Évolution (stats Méga : ${megaLines} — Total Méga : ${megaBST})`;
-    }
-    if (d.isShiny) prompt += `\n- Shiny`;
-
-    promptOutput.value = prompt;
-
-    // ── Prompt amélioré (version test) ──
     const rarityContext = {
         'Starter':    'Pokémon de départ — accessible, iconique, avec une belle progression en évoluant.',
         'Légendaire': 'Pokémon légendaire ou mythique — imposant, rare, chargé de lore.',
@@ -995,7 +977,7 @@ function generateOutputs(d) {
     promptV2 += `\n4. 2 talents (dont 1 caché) adaptés aux types et stats`;
     promptV2 += `\n5. 4 attaques emblématiques`;
 
-    if (promptOutputV2) promptOutputV2.value = promptV2;
+    promptOutputV2.value = promptV2;
 
     outputSection.classList.remove('hidden'); // Révèle la section outputs
 
