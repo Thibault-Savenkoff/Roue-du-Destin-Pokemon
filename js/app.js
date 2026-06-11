@@ -19,6 +19,9 @@ const promptOutputV2  = document.getElementById('prompt-output-v2');
 const csvOutput       = document.getElementById('csv-output');
 const winnerDisplay   = document.getElementById('winner-display');
 const btnRejouer      = document.getElementById('btn-rejouer');
+const historySection  = document.getElementById('history-section');
+const historyList     = document.getElementById('history-list');
+const counterDisplay  = document.getElementById('counter-display');
 
 if (btnGenerer) {
     btnGenerer.type = 'button';
@@ -727,7 +730,7 @@ async function lanceDestinee(mode = 'auto') {
 
     const finalData = {}; // Accumulera tous les résultats pour la génération finale
     let stepCount = 1;
-    let estimatedTotal = 11; // Base : 1 rareté + 1 double? + 1 type + 6 stats + 1 méga? + 1 shiny
+    let estimatedTotal = 13; // Base : rareté + double? + type + évolution + région + 6 stats + méga? + shiny
 
     function updateProgress(total) {
         if (progressionText) progressionText.textContent = `Étape ${stepCount} sur ~${total}`;
@@ -776,7 +779,23 @@ async function lanceDestinee(mode = 'auto') {
         }
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
-        // ── Étape 4 : Stats (une roue par stat, 6 au total) ──
+        // ── Étape 4 : Stade d'évolution ──
+        updateProgress(estimatedTotal);
+        await waitManualClick();
+        const evoStage = await spinWheel("4. Stade d'évolution", data.evolutionStages);
+        finalData.evolution = evoStage.label;
+        addToSummary("Évolution", finalData.evolution);
+        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+
+        // ── Étape 5 : Région d'origine ──
+        updateProgress(estimatedTotal);
+        await waitManualClick();
+        const region = await spinWheel("5. Région d'origine", data.regions);
+        finalData.region = region.label;
+        addToSummary("Région", finalData.region);
+        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+
+        // ── Étape 6 : Stats (une roue par stat, 6 au total) ──
         finalData.stats = {};
         for (const stat of data.statsNames) {
             updateProgress(estimatedTotal);
@@ -942,8 +961,8 @@ function generateOutputs(d) {
     const megaBST  = d.stats.hp  + d.stats.atk  + d.stats.def  + d.stats.spa  + d.stats.spd  + d.stats.vit;
 
     // ── CSV ──
-    const csvHeader = "Rareté,Type 1,Type 2,PV,ATT,DEF,ATT.Spe,DEF.Spe,VIT,Total,Méga-Evo,Shiny";
-    const csvRow    = `${d.rarete},${d.type1},${d.type2},${d.stats.hp},${d.stats.atk},${d.stats.def},${d.stats.spa},${d.stats.spd},${d.stats.vit},${megaBST},${d.isMega ? 'Oui' : 'Non'},${d.isShiny ? 'Oui' : 'Non'}`;
+    const csvHeader = "Rareté,Type 1,Type 2,Évolution,Région,PV,ATT,DEF,ATT.Spe,DEF.Spe,VIT,Total,Méga-Evo,Shiny";
+    const csvRow    = `${d.rarete},${d.type1},${d.type2},${d.evolution},${d.region},${d.stats.hp},${d.stats.atk},${d.stats.def},${d.stats.spa},${d.stats.spd},${d.stats.vit},${megaBST},${d.isMega ? 'Oui' : 'Non'},${d.isShiny ? 'Oui' : 'Non'}`;
     csvOutput.value = `${csvHeader}\n${csvRow}`;
 
     // ── Prompt ChatGPT ──
@@ -960,6 +979,8 @@ function generateOutputs(d) {
     promptV2 += `\n【 Caractéristiques imposées 】`;
     promptV2 += `\n- Lignée : ${d.rarete}${rarityHint ? ` — ${rarityHint}` : ''}`;
     promptV2 += `\n- Type(s) : ${typeString}`;
+    promptV2 += `\n- Évolution : ${d.evolution}`;
+    promptV2 += `\n- Région d'origine : ${d.region}`;
     promptV2 += `\n- Stats de base : ${statProfile}  (Total : ${baseBST})`;
     if (d.isMega) {
         const megaProfile = Object.entries(d.megaBoosts).map(([k, v]) => {
@@ -979,9 +1000,56 @@ function generateOutputs(d) {
 
     promptOutputV2.value = promptV2;
 
-    outputSection.classList.remove('hidden'); // Révèle la section outputs
+    outputSection.classList.remove('hidden');
+    saveToHistory(d);
+    updateCounter();
 
     vibrate([100, 50, 100, 50, 400]);
+}
+
+// ── Historique & Compteur ─────────────────────────────────────────────────────
+function saveToHistory(d) {
+    const history = JSON.parse(localStorage.getItem('roue-history') || '[]');
+    const types = d.isDouble ? `${d.type1} / ${d.type2}` : d.type1;
+    const bst = d.stats.hp + d.stats.atk + d.stats.def + d.stats.spa + d.stats.spd + d.stats.vit;
+    history.unshift({
+        date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+        rarete: d.rarete,
+        types,
+        evolution: d.evolution,
+        region: d.region,
+        bst,
+        isMega: d.isMega,
+        isShiny: d.isShiny,
+    });
+    if (history.length > 10) history.pop();
+    localStorage.setItem('roue-history', JSON.stringify(history));
+    renderHistory();
+}
+
+function renderHistory() {
+    const history = JSON.parse(localStorage.getItem('roue-history') || '[]');
+    if (!historyList || !historySection) return;
+    if (history.length === 0) { historySection.classList.add('hidden'); return; }
+    historySection.classList.remove('hidden');
+    historyList.innerHTML = history.map(h => {
+        const badges = [h.isMega ? '⚡Méga' : '', h.isShiny ? '✨Shiny' : ''].filter(Boolean).join(' ');
+        return `<div class="bg-slate-800 rounded-xl p-3 border border-slate-700 text-xs text-slate-300 flex justify-between items-start gap-2">
+            <div>
+                <span class="font-bold text-white">${h.rarete}</span>
+                <span class="text-slate-500 ml-2">${h.date}</span><br>
+                <span>${h.types}</span> · <span class="text-slate-400">${h.evolution}</span> · <span class="text-slate-400">${h.region}</span>
+                ${badges ? `<br><span class="text-yellow-400">${badges}</span>` : ''}
+            </div>
+            <span class="text-slate-400 font-mono whitespace-nowrap">BST ${h.bst}</span>
+        </div>`;
+    }).join('');
+}
+
+function updateCounter() {
+    const count = parseInt(localStorage.getItem('roue-count') || '0') + 1;
+    localStorage.setItem('roue-count', String(count));
+    if (counterDisplay) counterDisplay.textContent = `${count} Fakemon générés`;
 }
 
 // ── Binding des boutons ───────────────────────────────────────────────────────
@@ -1044,6 +1112,11 @@ function initWheel() {
 }
 
 initWheel();
+
+// Initialise le compteur et l'historique au chargement
+const savedCount = parseInt(localStorage.getItem('roue-count') || '0');
+if (counterDisplay && savedCount > 0) counterDisplay.textContent = `${savedCount} Fakemon générés`;
+renderHistory();
 
 // Si on vient de la page settings (bouton Tester), permette un aperçu rapide
 if (new URLSearchParams(location.search).get('previewConfetti') === '1') {

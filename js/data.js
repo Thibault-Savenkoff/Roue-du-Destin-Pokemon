@@ -90,6 +90,27 @@ const defaultData = {
         { label: "VIT",     percentage: 16.66, key: "vit" }
     ],
 
+    // Stade d'évolution du Fakemon
+    evolutionStages: [
+        { label: "Forme unique",   percentage: 20 },
+        { label: "2 stades",       percentage: 50 },
+        { label: "3 stades",       percentage: 30 },
+    ],
+
+    // Région d'origine du Fakemon
+    regions: [
+        { label: "Kanto",    percentage: 10 },
+        { label: "Johto",    percentage: 10 },
+        { label: "Hoenn",    percentage: 10 },
+        { label: "Sinnoh",   percentage: 10 },
+        { label: "Unys",     percentage: 10 },
+        { label: "Kalos",    percentage: 10 },
+        { label: "Alola",    percentage: 10 },
+        { label: "Galar",    percentage: 10 },
+        { label: "Paldea",   percentage: 10 },
+        { label: "Inédite",  percentage: 10 },
+    ],
+
     // Chance d'avoir une Méga-Évolution
     mega: [
         { label: "Oui", percentage: 4.5 },
