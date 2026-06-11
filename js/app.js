@@ -868,6 +868,7 @@ async function lanceDestinee(mode = 'auto') {
             await waitManualClick();
             const boostVal1 = await spinWheel(`Boost (${boost1.label})`, data.statsValues);
             finalData.stats[boost1.key] += boostVal1.value;
+            finalData.megaBoosts[boost1.key] = boostVal1.value;
             addToSummary(`Boost Méga ${boost1.label}`, `+${boostVal1.value} (Total: ${finalData.stats[boost1.key]})`, true);
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
@@ -886,6 +887,7 @@ async function lanceDestinee(mode = 'auto') {
             await waitManualClick();
             const boostVal2 = await spinWheel(`Boost (${boost2.label})`, data.statsValues);
             finalData.stats[boost2.key] += boostVal2.value;
+            finalData.megaBoosts[boost2.key] = boostVal2.value;
             addToSummary(`Boost Méga ${boost2.label}`, `+${boostVal2.value} (Total: ${finalData.stats[boost2.key]})`, true);
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
         }
@@ -930,9 +932,15 @@ async function lanceDestinee(mode = 'auto') {
  * @param {Object} d - L'objet finalData rempli par lanceDestinee()
  */
 function generateOutputs(d) {
-    // Calcul du total des stats de base (BST)
-    const totalStats = d.stats.hp + d.stats.atk + d.stats.def + d.stats.spa + d.stats.spd + d.stats.vit;
     const typeString = d.isDouble ? `${d.type1} et ${d.type2}` : d.type1;
+
+    // Stats de base = stats finales SANS les boosts Méga (ceux-ci appartiennent à la forme Méga)
+    const baseStats = { ...d.stats };
+    if (d.isMega && d.megaBoosts) {
+        for (const [key, val] of Object.entries(d.megaBoosts)) baseStats[key] -= val;
+    }
+    const baseBST = baseStats.hp + baseStats.atk + baseStats.def + baseStats.spa + baseStats.spd + baseStats.vit;
+    const megaBST  = d.stats.hp  + d.stats.atk  + d.stats.def  + d.stats.spa  + d.stats.spd  + d.stats.vit;
 
     // ── CSV ──
     const csvHeader = "Rareté,Type 1,Type 2,PV,ATT,DEF,ATT.Spe,DEF.Spe,VIT,Total,Méga-Evo,Shiny";
@@ -943,10 +951,15 @@ function generateOutputs(d) {
     let prompt = `Génère moi un pokémon avec ses stats là :
 - Rareté / Lignée : ${d.rarete}
 - Type(s) : ${typeString}
-- Base Stats Total : ${totalStats} (Profil : PV ${d.stats.hp}, ATK ${d.stats.atk}, DEF ${d.stats.def}, ATK SPE ${d.stats.spa}, DEF SPE ${d.stats.spd}, VIT ${d.stats.vit})`;
+- Base Stats Total : ${baseBST} (Profil : PV ${baseStats.hp}, ATK ${baseStats.atk}, DEF ${baseStats.def}, ATK SPE ${baseStats.spa}, DEF SPE ${baseStats.spd}, VIT ${baseStats.vit})`;
 
-    // Ajoute des lignes optionnelles selon les résultats
-    if (d.isMega) prompt  += `\n- Méga-Évolution (PS : Les stats de base sont déjà boostées.)`;
+    if (d.isMega) {
+        const megaLines = Object.entries(d.megaBoosts).map(([k, v]) => {
+            const label = { hp:'PV', atk:'ATK', def:'DEF', spa:'ATK SPE', spd:'DEF SPE', vit:'VIT' }[k];
+            return `${label} ${baseStats[k]} → ${d.stats[k]} (+${v})`;
+        }).join(', ');
+        prompt += `\n- Méga-Évolution (stats Méga : ${megaLines} — Total Méga : ${megaBST})`;
+    }
     if (d.isShiny) prompt += `\n- Shiny`;
 
     promptOutput.value = prompt;
@@ -959,14 +972,20 @@ function generateOutputs(d) {
         'Aucun':      'Pokémon standard — équilibré, crédible dans un Pokédex classique.',
     };
     const rarityHint = rarityContext[d.rarete] || '';
-    const statProfile = `PV ${d.stats.hp} | ATK ${d.stats.atk} | DEF ${d.stats.def} | ATK.SPE ${d.stats.spa} | DEF.SPE ${d.stats.spd} | VIT ${d.stats.vit}`;
+    const statProfile = `PV ${baseStats.hp} | ATK ${baseStats.atk} | DEF ${baseStats.def} | ATK.SPE ${baseStats.spa} | DEF.SPE ${baseStats.spd} | VIT ${baseStats.vit}`;
 
     let promptV2 = `Crée un Fakemon (Pokémon original et fictif) en respectant ces caractéristiques :\n`;
     promptV2 += `\n【 Caractéristiques imposées 】`;
     promptV2 += `\n- Lignée : ${d.rarete}${rarityHint ? ` — ${rarityHint}` : ''}`;
     promptV2 += `\n- Type(s) : ${typeString}`;
-    promptV2 += `\n- Stats de base : ${statProfile}  (Total : ${totalStats})`;
-    if (d.isMega)  promptV2 += `\n- Méga-Évolution disponible (les stats ci-dessus incluent déjà les boosts)`;
+    promptV2 += `\n- Stats de base : ${statProfile}  (Total : ${baseBST})`;
+    if (d.isMega) {
+        const megaProfile = Object.entries(d.megaBoosts).map(([k, v]) => {
+            const label = { hp:'PV', atk:'ATK', def:'DEF', spa:'ATK.SPE', spd:'DEF.SPE', vit:'VIT' }[k];
+            return `${label} +${v} (→ ${d.stats[k]})`;
+        }).join(', ');
+        promptV2 += `\n- Méga-Évolution disponible — boosts Méga : ${megaProfile}  (Total Méga : ${megaBST})`;
+    }
     if (d.isShiny) promptV2 += `\n- Version Shiny`;
 
     promptV2 += `\n\n【 À générer 】`;
