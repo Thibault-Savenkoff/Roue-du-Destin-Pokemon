@@ -726,6 +726,7 @@ async function lanceDestinee(mode = 'auto') {
 
     const finalData = {}; // Accumulera tous les résultats pour la génération finale
     let stepCount = 1;
+    let estimatedTotal = 11; // Base : 1 rareté + 1 double? + 1 type + 6 stats + 1 méga? + 1 shiny
 
     function updateProgress(total) {
         if (progressionText) progressionText.textContent = `Étape ${stepCount} sur ~${total}`;
@@ -736,21 +737,24 @@ async function lanceDestinee(mode = 'auto') {
     try {
         // ── Étape 1 : Rareté ──
         await waitManualClick(); // En mode manuel, attend le clic avant de lancer
-        updateProgress(13);
+        updateProgress(estimatedTotal);
         const rarete = await spinWheel("1. Rareté", data.rarete);
         finalData.rarete = rarete.label;
         addToSummary("Rareté", finalData.rarete);
+        if (finalData.rarete === 'Starter') estimatedTotal += 3;
+        if (finalData.rarete === 'Légendaire' || finalData.rarete === 'Fabuleux') estimatedTotal += 4;
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
         // ── Étape 2 : Double Type ? ──
-        updateProgress(13);
+        updateProgress(estimatedTotal);
         await waitManualClick();
         const isDoubleType = await spinWheel("2. Double Type ?", data.doubleType);
         finalData.isDouble = isDoubleType.label === "Oui";
+        if (finalData.isDouble) estimatedTotal += 1;
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
         // ── Étape 3 : Type Principal ──
-        updateProgress(13);
+        updateProgress(estimatedTotal);
         await waitManualClick();
         const type1 = await spinWheel("3. Type Principal", data.types, true);
         finalData.type1 = type1.label;
@@ -759,7 +763,7 @@ async function lanceDestinee(mode = 'auto') {
         // ── Étape 3b (conditionnelle) : Type Secondaire ──
         if (finalData.isDouble) {
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
-            updateProgress(13);
+            updateProgress(estimatedTotal);
             // Exclut le type 1 déjà tiré pour éviter un doublon
             let optionsType2 = data.types.filter(t => t.label !== finalData.type1);
             await waitManualClick();
@@ -774,7 +778,7 @@ async function lanceDestinee(mode = 'auto') {
         // ── Étape 4 : Stats (une roue par stat, 6 au total) ──
         finalData.stats = {};
         for (const stat of data.statsNames) {
-            updateProgress(13);
+            updateProgress(estimatedTotal);
             await waitManualClick();
             const pulledStat = await spinWheel(`4. Stat : ${stat.label}`, data.statsValues);
             finalData.stats[stat.key] = pulledStat.value; // Stocke par clé (hp, atk, def, spa, spd, vit)
@@ -786,7 +790,7 @@ async function lanceDestinee(mode = 'auto') {
         if (finalData.rarete === 'Starter') {
             let starterPool = data.statsNames.map(s => ({ ...s }));
             for (let i = 1; i <= 3; i++) {
-                updateProgress(13);
+                updateProgress(estimatedTotal);
                 await waitManualClick();
                 const pickedStat = await spinWheel(`Starter : Stat boostée ${i}`, starterPool);
                 finalData.stats[pickedStat.key] += 10;
@@ -806,27 +810,29 @@ async function lanceDestinee(mode = 'auto') {
                 ? data.statsValues.filter(v => v.value >= 60)
                 : data.statsValues;
 
-            updateProgress(13);
+            updateProgress(estimatedTotal);
             await waitManualClick();
             const rarityBoost1 = await spinWheel(`${rarityLabel} : Stat boostée 1`, data.statsNames);
             addToSummary(`Stat ${rarityLabel} 1`, rarityBoost1.label, true);
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
-            updateProgress(14);
+            updateProgress(estimatedTotal);
             await waitManualClick();
             const rarityBoostVal1 = await spinWheel(`Boost (${rarityBoost1.label})`, rarityValPool);
             finalData.stats[rarityBoost1.key] += rarityBoostVal1.value;
             addToSummary(`Boost ${rarityLabel} ${rarityBoost1.label}`, `+${rarityBoostVal1.value} (Total: ${finalData.stats[rarityBoost1.key]})`, true);
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
-            const rarityPool2 = data.statsNames.filter(s => s.key !== rarityBoost1.key);
-            updateProgress(15);
+            const rarityPool2 = data.statsNames.map(s =>
+                s.key === rarityBoost1.key ? { ...s, percentage: 0, grayed: true } : { ...s }
+            );
+            updateProgress(estimatedTotal);
             await waitManualClick();
             const rarityBoost2 = await spinWheel(`${rarityLabel} : Stat boostée 2`, rarityPool2);
             addToSummary(`Stat ${rarityLabel} 2`, rarityBoost2.label, true);
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
-            updateProgress(16);
+            updateProgress(estimatedTotal);
             await waitManualClick();
             const rarityBoostVal2 = await spinWheel(`Boost (${rarityBoost2.label})`, rarityValPool);
             finalData.stats[rarityBoost2.key] += rarityBoostVal2.value;
@@ -835,11 +841,12 @@ async function lanceDestinee(mode = 'auto') {
         }
 
         // ── Étape 5 : Méga-Évolution ──
-        updateProgress(13);
+        updateProgress(estimatedTotal);
         await waitManualClick();
         const mega = await spinWheel("5. Méga-Evolution ?", data.mega);
         finalData.isMega = mega.label === "Oui";
         addToSummary("Méga-Evo", finalData.isMega ? "Oui" : "Non");
+        if (finalData.isMega) estimatedTotal += 4;
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
         // ── Étapes 5a/5b (conditionnelles) : Boosts Méga ──
@@ -847,7 +854,7 @@ async function lanceDestinee(mode = 'auto') {
             finalData.megaBoosts = {};
         
             // ── Roue : quelle stat est boostée en premier ? ──
-            updateProgress(14);
+            updateProgress(estimatedTotal);
             await waitManualClick();
             const megaStatsPool = data.statsNames.filter(s => s.key !== 'hp');
             const boost1 = await spinWheel("Méga : Stat boostée 1", megaStatsPool);
@@ -855,7 +862,7 @@ async function lanceDestinee(mode = 'auto') {
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
             // ── Roue : valeur du boost 1 ──
-            updateProgress(15);
+            updateProgress(estimatedTotal);
             await waitManualClick();
             const boostVal1 = await spinWheel(`Boost (${boost1.label})`, data.statsValues);
             finalData.stats[boost1.key] += boostVal1.value;
@@ -864,14 +871,14 @@ async function lanceDestinee(mode = 'auto') {
 
             // ── Roue : quelle stat est boostée en second ? (exclut PV et la première) ──
             const statsNamesPool2 = data.statsNames.filter(s => s.key !== 'hp' && s.key !== boost1.key);
-            updateProgress(16);
+            updateProgress(estimatedTotal);
             await waitManualClick();
             const boost2 = await spinWheel("Méga : Stat boostée 2", statsNamesPool2);
             addToSummary("Stat Méga 2", boost2.label, true);
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
         
             // ── Roue : valeur du boost 2 ──
-            updateProgress(17);
+            updateProgress(estimatedTotal);
             await waitManualClick();
             const boostVal2 = await spinWheel(`Boost (${boost2.label})`, data.statsValues);
             finalData.stats[boost2.key] += boostVal2.value;
@@ -880,7 +887,7 @@ async function lanceDestinee(mode = 'auto') {
         }
 
         // ── Étape 6 : Shiny ──
-        updateProgress(13);
+        updateProgress(estimatedTotal);
         await waitManualClick();
         const shiny = await spinWheel("6. Shiny ?", data.shiny);
         finalData.isShiny = shiny.label === "Oui";
