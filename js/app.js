@@ -1017,6 +1017,8 @@ function generateOutputs(d) {
     }
     if (d.isShiny) promptV2 += `\n- Version Shiny`;
 
+    promptV2 += `\n\n⚠️ Génère uniquement la forme de base (stade 1), même si le Pokémon a une ou deux évolutions.`;
+
     promptV2 += `\n\n【 À générer 】`;
     promptV2 += `\n1. Nom + courte étymologie`;
     promptV2 += `\n2. Apparence (forme, couleurs, traits marquants)`;
