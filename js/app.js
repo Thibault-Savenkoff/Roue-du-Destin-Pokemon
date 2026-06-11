@@ -778,6 +778,52 @@ async function lanceDestinee(mode = 'auto') {
             if (currentMode === 'auto') await pause(1000); // Pause plus courte entre les stats
         }
 
+        // ── Bonus Starter : +10 sur 3 stats aléatoires ──
+        if (finalData.rarete === 'Starter') {
+            const starterStats = [...data.statsNames].sort(() => Math.random() - 0.5).slice(0, 3);
+            starterStats.forEach(stat => {
+                finalData.stats[stat.key] += 10;
+                addToSummary(`Bonus Starter (${stat.label})`, `+10 → ${finalData.stats[stat.key]}`, true);
+            });
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        }
+
+        // ── Bonus Légendaire / Fabuleux : 2 stats boostées par roue ──
+        if (finalData.rarete === 'Légendaire' || finalData.rarete === 'Fabuleux') {
+            const rarityLabel   = finalData.rarete;
+            // Pour Fabuleux, les valeurs de boost partent de 60 minimum
+            const rarityValPool = finalData.rarete === 'Fabuleux'
+                ? data.statsValues.filter(v => v.value >= 60)
+                : data.statsValues;
+
+            updateProgress(13);
+            await waitManualClick();
+            const rarityBoost1 = await spinWheel(`${rarityLabel} : Stat boostée 1`, data.statsNames);
+            addToSummary(`Stat ${rarityLabel} 1`, rarityBoost1.label, true);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+
+            updateProgress(14);
+            await waitManualClick();
+            const rarityBoostVal1 = await spinWheel(`Boost (${rarityBoost1.label})`, rarityValPool);
+            finalData.stats[rarityBoost1.key] += rarityBoostVal1.value;
+            addToSummary(`Boost ${rarityLabel} ${rarityBoost1.label}`, `+${rarityBoostVal1.value} (Total: ${finalData.stats[rarityBoost1.key]})`, true);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+
+            const rarityPool2 = data.statsNames.filter(s => s.key !== rarityBoost1.key);
+            updateProgress(15);
+            await waitManualClick();
+            const rarityBoost2 = await spinWheel(`${rarityLabel} : Stat boostée 2`, rarityPool2);
+            addToSummary(`Stat ${rarityLabel} 2`, rarityBoost2.label, true);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+
+            updateProgress(16);
+            await waitManualClick();
+            const rarityBoostVal2 = await spinWheel(`Boost (${rarityBoost2.label})`, rarityValPool);
+            finalData.stats[rarityBoost2.key] += rarityBoostVal2.value;
+            addToSummary(`Boost ${rarityLabel} ${rarityBoost2.label}`, `+${rarityBoostVal2.value} (Total: ${finalData.stats[rarityBoost2.key]})`, true);
+            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        }
+
         // ── Étape 5 : Méga-Évolution ──
         updateProgress(13);
         await waitManualClick();
@@ -793,10 +839,11 @@ async function lanceDestinee(mode = 'auto') {
             // ── Roue : quelle stat est boostée en premier ? ──
             updateProgress(14);
             await waitManualClick();
-            const boost1 = await spinWheel("Méga : Stat boostée 1", data.statsNames);
+            const megaStatsPool = data.statsNames.filter(s => s.key !== 'hp');
+            const boost1 = await spinWheel("Méga : Stat boostée 1", megaStatsPool);
             addToSummary("Stat Méga 1", boost1.label, true);
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
-        
+
             // ── Roue : valeur du boost 1 ──
             updateProgress(15);
             await waitManualClick();
@@ -804,9 +851,9 @@ async function lanceDestinee(mode = 'auto') {
             finalData.stats[boost1.key] += boostVal1.value;
             addToSummary(`Boost Méga ${boost1.label}`, `+${boostVal1.value} (Total: ${finalData.stats[boost1.key]})`, true);
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
-        
-            // ── Roue : quelle stat est boostée en second ? (exclut la première) ──
-            const statsNamesPool2 = data.statsNames.filter(s => s.key !== boost1.key);
+
+            // ── Roue : quelle stat est boostée en second ? (exclut PV et la première) ──
+            const statsNamesPool2 = data.statsNames.filter(s => s.key !== 'hp' && s.key !== boost1.key);
             updateProgress(16);
             await waitManualClick();
             const boost2 = await spinWheel("Méga : Stat boostée 2", statsNamesPool2);
