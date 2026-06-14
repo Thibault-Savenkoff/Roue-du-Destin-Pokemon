@@ -730,7 +730,7 @@ async function lanceDestinee(mode = 'auto') {
 
     const finalData = {}; // Accumulera tous les résultats pour la génération finale
     let stepCount = 1;
-    let estimatedTotal = 13; // Base : rareté + double? + type + évolution + région + 6 stats + méga? + shiny
+    let estimatedTotal = 12; // Base : rareté + double? + type + région + 6 stats + méga? + shiny
 
     function updateProgress(total) {
         if (progressionText) progressionText.textContent = `Étape ${stepCount} sur ~${total}`;
@@ -749,26 +749,18 @@ async function lanceDestinee(mode = 'auto') {
         if (finalData.rarete === 'Légendaire' || finalData.rarete === 'Fabuleux') estimatedTotal += 4;
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
-        // ── Étape 2 : Stade d'évolution ──
+        // ── Étape 2 : Région d'origine ──
         updateProgress(estimatedTotal);
         await waitManualClick();
-        const evoStage = await spinWheel("2. Stade d'évolution", data.evolutionStages);
-        finalData.evolution = evoStage.label;
-        addToSummary("Évolution", finalData.evolution);
-        if (currentMode === 'auto') await pause(PAUSE_DURATION);
-
-        // ── Étape 3 : Région d'origine ──
-        updateProgress(estimatedTotal);
-        await waitManualClick();
-        const region = await spinWheel("3. Région d'origine", data.regions);
+        const region = await spinWheel("2. Région d'origine", data.regions);
         finalData.region = region.label;
         addToSummary("Région", finalData.region);
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
 
-        // ── Étape 4 : Double Type ? ──
+        // ── Étape 3 : Double Type ? ──
         updateProgress(estimatedTotal);
         await waitManualClick();
-        const isDoubleType = await spinWheel("4. Double Type ?", data.doubleType);
+        const isDoubleType = await spinWheel("3. Double Type ?", data.doubleType);
         finalData.isDouble = isDoubleType.label === "Oui";
         if (finalData.isDouble) estimatedTotal += 1;
         if (currentMode === 'auto') await pause(PAUSE_DURATION);
@@ -776,7 +768,7 @@ async function lanceDestinee(mode = 'auto') {
         // ── Étape 5 : Type Principal ──
         updateProgress(estimatedTotal);
         await waitManualClick();
-        const type1 = await spinWheel("5. Type Principal", data.types, true);
+        const type1 = await spinWheel("4. Type Principal", data.types, true);
         finalData.type1 = type1.label;
         addToSummary("Type 1", `<span style="color:${typeColors[type1.label]}">${type1.label}</span>`);
 
@@ -786,7 +778,7 @@ async function lanceDestinee(mode = 'auto') {
             updateProgress(estimatedTotal);
             let optionsType2 = data.types.filter(t => t.label !== finalData.type1);
             await waitManualClick();
-            const type2 = await spinWheel("5b. Type Secondaire", optionsType2, true);
+            const type2 = await spinWheel("4b. Type Secondaire", optionsType2, true);
             finalData.type2 = type2.label;
             addToSummary("Type 2", `<span style="color:${typeColors[type2.label]}">${type2.label}</span>`);
         } else {
@@ -799,7 +791,7 @@ async function lanceDestinee(mode = 'auto') {
         for (const stat of data.statsNames) {
             updateProgress(estimatedTotal);
             await waitManualClick();
-            const pulledStat = await spinWheel(`6. Stat : ${stat.label}`, data.statsValues);
+            const pulledStat = await spinWheel(`5. Stat : ${stat.label}`, data.statsValues);
             finalData.stats[stat.key] = pulledStat.value; // Stocke par clé (hp, atk, def, spa, spd, vit)
             addToSummary(stat.label, finalData.stats[stat.key]);
             if (currentMode === 'auto') await pause(1000); // Pause plus courte entre les stats
@@ -859,28 +851,10 @@ async function lanceDestinee(mode = 'auto') {
             if (currentMode === 'auto') await pause(PAUSE_DURATION);
         }
 
-        // ── Boosts d'évolution automatiques ──
-        // Appliqués après les bonus de rareté — stade 1 = stats actuelles, stade final = stats boostées
-        const EVO_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'vit'];
-        finalData.preEvoStats = { ...finalData.stats };
-
-        if (finalData.evolution === '2 stades') {
-            EVO_KEYS.forEach(k => finalData.stats[k] += 15);
-            addToSummary('↑ Évolution', '+15 à chaque stat', true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
-        } else if (finalData.evolution === '3 stades') {
-            EVO_KEYS.forEach(k => finalData.stats[k] += 10);
-            finalData.stage2Stats = { ...finalData.stats };
-            addToSummary('↑ 1ère évolution', '+10 à chaque stat', true);
-            EVO_KEYS.forEach(k => finalData.stats[k] += 15);
-            addToSummary('↑ 2ème évolution', '+15 à chaque stat', true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
-        }
-
-        // ── Étape 5 : Méga-Évolution ──
+        // ── Étape 6 : Méga-Évolution ──
         updateProgress(estimatedTotal);
         await waitManualClick();
-        const mega = await spinWheel("5. Méga-Evolution ?", data.mega);
+        const mega = await spinWheel("6. Méga-Evolution ?", data.mega);
         finalData.isMega = mega.label === "Oui";
         addToSummary("Méga-Evo", finalData.isMega ? "Oui" : "Non");
         if (finalData.isMega) estimatedTotal += 4;
@@ -930,7 +904,7 @@ async function lanceDestinee(mode = 'auto') {
         // ── Étape 6 : Shiny ──
         updateProgress(estimatedTotal);
         await waitManualClick();
-        const shiny = await spinWheel("6. Shiny ?", data.shiny);
+        const shiny = await spinWheel("7. Shiny ?", data.shiny);
         finalData.isShiny = shiny.label === "Oui";
         if (finalData.isShiny) {
             addToSummary("Shiny", "✨ OUI ✨", true);
@@ -978,8 +952,8 @@ function generateOutputs(d) {
     const megaBST  = d.stats.hp  + d.stats.atk  + d.stats.def  + d.stats.spa  + d.stats.spd  + d.stats.vit;
 
     // ── CSV ──
-    const csvHeader = "Rareté,Type 1,Type 2,Évolution,Région,PV,ATT,DEF,ATT.Spe,DEF.Spe,VIT,Total,Méga-Evo,Shiny";
-    const csvRow    = `${d.rarete},${d.type1},${d.type2},${d.evolution},${d.region},${d.stats.hp},${d.stats.atk},${d.stats.def},${d.stats.spa},${d.stats.spd},${d.stats.vit},${megaBST},${d.isMega ? 'Oui' : 'Non'},${d.isShiny ? 'Oui' : 'Non'}`;
+    const csvHeader = "Rareté,Type 1,Type 2,Région,PV,ATT,DEF,ATT.Spe,DEF.Spe,VIT,Total,Méga-Evo,Shiny";
+    const csvRow    = `${d.rarete},${d.type1},${d.type2},${d.region},${d.stats.hp},${d.stats.atk},${d.stats.def},${d.stats.spa},${d.stats.spd},${d.stats.vit},${megaBST},${d.isMega ? 'Oui' : 'Non'},${d.isShiny ? 'Oui' : 'Non'}`;
     csvOutput.value = `${csvHeader}\n${csvRow}`;
 
     // ── Prompt ChatGPT ──
@@ -996,16 +970,6 @@ function generateOutputs(d) {
     promptV2 += `\n【 Caractéristiques imposées 】`;
     promptV2 += `\n- Lignée : ${d.rarete}${rarityHint ? ` — ${rarityHint}` : ''}`;
     promptV2 += `\n- Type(s) : ${typeString}`;
-    // Progression BST selon le stade d'évolution
-    const bstOf = stats => ['hp','atk','def','spa','spd','vit'].reduce((s,k) => s + stats[k], 0);
-    let evoLine = d.evolution;
-    if (d.evolution === '2 stades' && d.preEvoStats) {
-        evoLine = `2 stades — BST ${bstOf(d.preEvoStats)} (stade 1) → +15/stat → BST ${baseBST} (stade 2/final)`;
-    } else if (d.evolution === '3 stades' && d.preEvoStats && d.stage2Stats) {
-        const s2bst = bstOf(d.stage2Stats);
-        evoLine = `3 stades — BST ${bstOf(d.preEvoStats)} (stade 1) → +10/stat → BST ${s2bst} (stade 2) → +15/stat → BST ${baseBST} (stade 3/final)`;
-    }
-    promptV2 += `\n- Évolution : ${evoLine}`;
     promptV2 += `\n- Région d'origine : ${d.region}`;
     promptV2 += `\n- Stats de base : ${statProfile}  (Total : ${baseBST})`;
     if (d.isMega) {
@@ -1044,7 +1008,6 @@ function saveToHistory(d, prompt) {
         date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
         rarete: d.rarete,
         types,
-        evolution: d.evolution,
         region: d.region,
         bst,
         isMega: d.isMega,
@@ -1069,7 +1032,7 @@ function renderHistory() {
                 <div>
                     <span class="font-bold text-white">${h.rarete}</span>
                     <span class="text-slate-500 ml-2">${h.date}</span><br>
-                    <span class="text-slate-300">${h.types}</span> · <span class="text-slate-400">${h.evolution}</span> · <span class="text-slate-400">${h.region}</span>
+                    <span class="text-slate-300">${h.types}</span> · <span class="text-slate-400">${h.region}</span>
                     ${badges ? `<br><span class="text-yellow-400">${badges}</span>` : ''}
                 </div>
                 <div class="flex flex-col items-end gap-1 shrink-0">
@@ -1079,7 +1042,10 @@ function renderHistory() {
             </button>
             <div id="history-detail-${i}" class="hidden px-3 pb-3 border-t border-slate-700">
                 <ul class="text-sm space-y-2 text-slate-300 mt-3">${h.summaryHTML || ''}</ul>
-                ${h.prompt ? `<button onclick="copyHistoryPrompt(${i})" class="mt-3 w-full bg-purple-700 hover:bg-purple-600 text-white text-xs font-bold py-2 rounded-lg transition-all">📋 Copier le prompt</button>` : ''}
+                <div class="flex gap-2 mt-3">
+                    ${h.prompt ? `<button onclick="copyHistoryPrompt(${i})" class="flex-1 bg-purple-700 hover:bg-purple-600 text-white text-xs font-bold py-2 rounded-lg transition-all">📋 Copier le prompt</button>` : ''}
+                    <button onclick="deleteHistoryEntry(${i})" class="bg-red-900 hover:bg-red-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">🗑️</button>
+                </div>
             </div>
         </div>`;
     }).join('');
@@ -1099,6 +1065,18 @@ function copyHistoryPrompt(i) {
     const showFeedback = () => { const o = btn.innerText; btn.innerText = '✅ Copié !'; setTimeout(() => btn.innerText = o, 2000); };
     if (navigator.clipboard) navigator.clipboard.writeText(history[i].prompt).then(showFeedback);
     else { const ta = document.createElement('textarea'); ta.value = history[i].prompt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showFeedback(); }
+}
+
+function deleteHistoryEntry(i) {
+    const history = JSON.parse(localStorage.getItem('roue-history') || '[]');
+    history.splice(i, 1);
+    localStorage.setItem('roue-history', JSON.stringify(history));
+    renderHistory();
+}
+
+function clearAllHistory() {
+    localStorage.removeItem('roue-history');
+    renderHistory();
 }
 
 function updateCounter() {

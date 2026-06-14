@@ -90,13 +90,6 @@ const defaultData = {
         { label: "VIT",     percentage: 16.66, key: "vit" }
     ],
 
-    // Stade d'évolution du Fakemon
-    evolutionStages: [
-        { label: "Forme unique", percentage: 20 }, // ~19.6% des Pokémon officiels n'ont aucune évolution
-        { label: "2 stades",     percentage: 45 }, // lignes à 2 stades : les plus nombreuses
-        { label: "3 stades",     percentage: 35 }, // lignes à 3 stades : secondes
-    ],
-
     // Région d'origine du Fakemon
     regions: [
         { label: "Kanto",    percentage: 10 },
