@@ -1027,7 +1027,7 @@ function renderHistory() {
     historySection.classList.remove('hidden');
     historyList.innerHTML = history.map((h, i) => {
         const badges = [h.isMega ? '⚡Méga' : '', h.isShiny ? '✨Shiny' : ''].filter(Boolean).join(' ');
-        return `<div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        return `<div data-swipe="${i}" class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden" style="touch-action:pan-y">
             <button onclick="toggleHistoryEntry(${i})" class="w-full p-3 text-xs text-left flex justify-between items-start gap-2 hover:bg-slate-700 transition-colors">
                 <div>
                     <span class="font-bold text-white">${h.rarete}</span>
@@ -1049,6 +1049,7 @@ function renderHistory() {
             </div>
         </div>`;
     }).join('');
+    addSwipeToDelete();
 }
 
 function toggleHistoryEntry(i) {
@@ -1065,6 +1066,34 @@ function copyHistoryPrompt(i) {
     const showFeedback = () => { const o = btn.innerText; btn.innerText = '✅ Copié !'; setTimeout(() => btn.innerText = o, 2000); };
     if (navigator.clipboard) navigator.clipboard.writeText(history[i].prompt).then(showFeedback);
     else { const ta = document.createElement('textarea'); ta.value = history[i].prompt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showFeedback(); }
+}
+
+function addSwipeToDelete() {
+    historyList.querySelectorAll('[data-swipe]').forEach(el => {
+        let startX, dx = 0;
+        el.addEventListener('touchstart', e => { startX = e.touches[0].clientX; dx = 0; }, { passive: true });
+        el.addEventListener('touchmove', e => {
+            dx = e.touches[0].clientX - startX;
+            if (dx < 0) {
+                el.style.transform = `translateX(${dx}px)`;
+                el.style.backgroundColor = `rgba(220,38,38,${Math.min(0.8, -dx / 120)})`;
+            }
+        }, { passive: true });
+        el.addEventListener('touchend', () => {
+            if (dx < -80) {
+                el.style.transition = 'transform 0.2s, opacity 0.2s';
+                el.style.transform = 'translateX(-100%)';
+                el.style.opacity = '0';
+                setTimeout(() => deleteHistoryEntry(+el.dataset.swipe), 200);
+            } else {
+                el.style.transition = 'transform 0.2s, background-color 0.2s';
+                el.style.transform = '';
+                el.style.backgroundColor = '';
+                setTimeout(() => el.style.transition = '', 200);
+            }
+            dx = 0;
+        });
+    });
 }
 
 function deleteHistoryEntry(i) {
