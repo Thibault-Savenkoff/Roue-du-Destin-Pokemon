@@ -940,7 +940,10 @@ async function lanceDestinee(mode = 'auto') {
         playFanfare();
         generateOutputs(finalData);
         lastFinalData = finalData;
-        setTimeout(() => outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+        setTimeout(() => {
+            const top = outputSection.getBoundingClientRect().top + window.scrollY - 80;
+            window.scrollTo({ top, behavior: 'smooth' });
+        }, 300);
 
     } catch (e) {
         console.error(e);
