@@ -1,0 +1,93 @@
+{
+  "rarete": [
+    { "id": "aucun",      "label": "Aucun",      "poids": 82.64 },
+    { "id": "starter",    "label": "Starter",    "poids": 7.9   },
+    { "id": "legendaire", "label": "Légendaire", "poids": 7.02  },
+    { "id": "fabuleux",   "label": "Fabuleux",   "poids": 2.44  }
+  ],
+
+  "doubleType": [
+    { "id": "oui", "label": "Oui", "poids": 52.1 },
+    { "id": "non", "label": "Non", "poids": 47.9 }
+  ],
+
+  "types": [
+    { "id": "vol",        "label": "Vol",        "poids": 5.56 },
+    { "id": "tenebres",   "label": "Ténèbres",   "poids": 5.56 },
+    { "id": "spectre",    "label": "Spectre",    "poids": 5.56 },
+    { "id": "sol",        "label": "Sol",        "poids": 5.56 },
+    { "id": "roche",      "label": "Roche",      "poids": 5.56 },
+    { "id": "psy",        "label": "Psy",        "poids": 5.56 },
+    { "id": "poison",     "label": "Poison",     "poids": 5.56 },
+    { "id": "plante",     "label": "Plante",     "poids": 5.56 },
+    { "id": "normal",     "label": "Normal",     "poids": 5.56 },
+    { "id": "insecte",    "label": "Insecte",    "poids": 5.56 },
+    { "id": "glace",      "label": "Glace",      "poids": 5.56 },
+    { "id": "feu",        "label": "Feu",        "poids": 5.56 },
+    { "id": "fee",        "label": "Fée",        "poids": 5.56 },
+    { "id": "electrique", "label": "Electrique", "poids": 5.56 },
+    { "id": "eau",        "label": "Eau",        "poids": 5.56 },
+    { "id": "dragon",     "label": "Dragon",     "poids": 5.56 },
+    { "id": "combat",     "label": "Combat",     "poids": 5.56 },
+    { "id": "acier",      "label": "Acier",      "poids": 5.56 }
+  ],
+
+  "statsValues": [
+    { "id": "10",  "label": "10",  "poids": 0.46,  "valeur": 10  },
+    { "id": "20",  "label": "20",  "poids": 0.93,  "valeur": 20  },
+    { "id": "25",  "label": "25",  "poids": 1.86,  "valeur": 25  },
+    { "id": "30",  "label": "30",  "poids": 2.79,  "valeur": 30  },
+    { "id": "35",  "label": "35",  "poids": 3.72,  "valeur": 35  },
+    { "id": "40",  "label": "40",  "poids": 4.65,  "valeur": 40  },
+    { "id": "45",  "label": "45",  "poids": 5.58,  "valeur": 45  },
+    { "id": "50",  "label": "50",  "poids": 6.51,  "valeur": 50  },
+    { "id": "55",  "label": "55",  "poids": 7.43,  "valeur": 55  },
+    { "id": "60",  "label": "60",  "poids": 9.29,  "valeur": 60  },
+    { "id": "65",  "label": "65",  "poids": 11.15, "valeur": 65  },
+    { "id": "70",  "label": "70",  "poids": 13.01, "valeur": 70  },
+    { "id": "75",  "label": "75",  "poids": 10.22, "valeur": 75  },
+    { "id": "80",  "label": "80",  "poids": 7.43,  "valeur": 80  },
+    { "id": "85",  "label": "85",  "poids": 5.58,  "valeur": 85  },
+    { "id": "90",  "label": "90",  "poids": 3.72,  "valeur": 90  },
+    { "id": "95",  "label": "95",  "poids": 2.32,  "valeur": 95  },
+    { "id": "100", "label": "100", "poids": 1.39,  "valeur": 100 },
+    { "id": "110", "label": "110", "poids": 0.93,  "valeur": 110 },
+    { "id": "125", "label": "125", "poids": 0.65,  "valeur": 125 },
+    { "id": "150", "label": "150", "poids": 0.19,  "valeur": 150 },
+    { "id": "160", "label": "160", "poids": 0.09,  "valeur": 160 },
+    { "id": "170", "label": "170", "poids": 0.05,  "valeur": 170 },
+    { "id": "180", "label": "180", "poids": 0.05,  "valeur": 180 }
+  ],
+
+  "statsNames": [
+    { "id": "pv",  "label": "PV",       "poids": 16.66, "cle": "hp"  },
+    { "id": "att", "label": "ATT",      "poids": 16.66, "cle": "atk" },
+    { "id": "def", "label": "DEF",      "poids": 16.66, "cle": "def" },
+    { "id": "spa", "label": "ATT. Spe", "poids": 16.66, "cle": "spa" },
+    { "id": "spd", "label": "DEF. Spe", "poids": 16.66, "cle": "spd" },
+    { "id": "vit", "label": "VIT",      "poids": 16.66, "cle": "vit" }
+  ],
+
+  "regions": [
+    { "id": "kanto",   "label": "Kanto",   "poids": 10 },
+    { "id": "johto",   "label": "Johto",   "poids": 10 },
+    { "id": "hoenn",   "label": "Hoenn",   "poids": 10 },
+    { "id": "sinnoh",  "label": "Sinnoh",  "poids": 10 },
+    { "id": "unys",    "label": "Unys",    "poids": 10 },
+    { "id": "kalos",   "label": "Kalos",   "poids": 10 },
+    { "id": "alola",   "label": "Alola",   "poids": 10 },
+    { "id": "galar",   "label": "Galar",   "poids": 10 },
+    { "id": "paldea",  "label": "Paldea",  "poids": 10 },
+    { "id": "inedite", "label": "Inédite", "poids": 10 }
+  ],
+
+  "mega": [
+    { "id": "oui", "label": "Oui", "poids": 4.5  },
+    { "id": "non", "label": "Non", "poids": 95.5 }
+  ],
+
+  "shiny": [
+    { "id": "oui", "label": "Oui", "poids": 0.0244  },
+    { "id": "non", "label": "Non", "poids": 99.9756 }
+  ]
+}

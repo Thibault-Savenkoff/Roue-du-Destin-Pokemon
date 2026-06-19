@@ -7,8 +7,13 @@
     <!-- Désactive le zoom manuel sur mobile pour un rendu cohérent -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Roue du Destin - Fakemon</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#f59e0b">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
     <!-- Tailwind CSS via CDN pour les classes utilitaires -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS pour le multijoueur WebRTC P2P -->
+    <script src="https://unpkg.com/peerjs@1/dist/peerjs.min.js"></script>
     <!-- Police Google Fonts : Poppins (poids 400, 600, 800) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
@@ -135,6 +140,62 @@
             <span>AUTO</span>
         </span>
     </button>
+    <!-- Bouton Multijoueur -->
+    <button id="btn-multi" class="w-full max-w-sm flex items-center justify-center gap-2 bg-teal-800 hover:bg-teal-700 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm mb-4">
+        🌐 Multijoueur (en ligne)
+    </button>
+
+    <!-- Panneau peer -->
+    <div id="peer-panel" class="w-full max-w-sm bg-slate-800 rounded-xl border border-teal-900 p-4 mb-4 hidden">
+        <h3 class="text-sm font-bold text-teal-400 mb-3 uppercase tracking-wider">Multijoueur P2P</h3>
+        <div id="peer-choice" class="flex gap-2">
+            <button id="peer-create-btn" class="flex-1 bg-teal-700 hover:bg-teal-600 text-white text-sm font-bold py-2 rounded-lg transition-all">🏠 Créer</button>
+            <button id="peer-join-open-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2 rounded-lg transition-all">🔗 Rejoindre</button>
+        </div>
+        <div id="peer-host-ui" class="hidden mt-3">
+            <p class="text-slate-400 text-xs mb-1">Partage cet ID à ton ami :</p>
+            <div class="flex gap-2 items-center">
+                <span id="peer-room-code" class="font-mono text-white bg-slate-900 rounded px-2 py-1 text-xs flex-1 break-all"></span>
+                <button id="peer-copy-code" class="bg-teal-700 hover:bg-teal-600 text-white text-xs px-3 py-1 rounded shrink-0">📋 Copier</button>
+            </div>
+            <p id="peer-guest-status" class="text-yellow-400 text-xs mt-2">En attente d'un joueur…</p>
+        </div>
+        <div id="peer-join-ui" class="hidden mt-3">
+            <p class="text-slate-400 text-xs mb-1">ID de l'hôte :</p>
+            <div class="flex gap-2">
+                <input id="peer-code-input" type="text" placeholder="Colle l'ID ici"
+                       class="flex-1 bg-slate-900 text-white rounded border border-slate-600 px-2 py-1 text-xs">
+                <button id="peer-join-btn" class="bg-teal-700 hover:bg-teal-600 text-white text-xs px-3 py-1 rounded shrink-0">Rejoindre</button>
+            </div>
+        </div>
+        <p id="peer-status" class="text-xs mt-2 hidden"></p>
+    </div>
+
+    <!-- Bouton Mode Draft -->
+    <button id="btn-draft-toggle" class="w-full max-w-sm flex items-center justify-center gap-2 bg-purple-800 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm mb-4">
+        🃏 Mode Draft (plusieurs joueurs)
+    </button>
+
+    <!-- Panneau de configuration du draft -->
+    <div id="draft-setup" class="w-full max-w-sm bg-slate-800 rounded-xl border border-purple-900 p-4 mb-4 hidden">
+        <h3 class="text-sm font-bold text-purple-400 mb-3 uppercase tracking-wider">Configuration du Draft</h3>
+        <div class="flex items-center gap-3 mb-3">
+            <label class="text-slate-300 text-sm shrink-0">Joueurs :</label>
+            <input id="draft-count" type="number" min="2" max="8" value="2"
+                   class="w-16 bg-slate-900 text-white text-center rounded border border-slate-600 p-1">
+        </div>
+        <div id="draft-names-inputs" class="space-y-2 mb-4"></div>
+        <button id="btn-draft-start" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg transition-all">
+            ▶ Démarrer le Draft
+        </button>
+    </div>
+
+    <!-- Indicateur de tour en cours -->
+    <div id="draft-turn-indicator" class="w-full max-w-sm text-center bg-purple-900/40 border border-purple-700 rounded-xl py-3 px-4 mb-4 hidden">
+        <p class="text-purple-300 text-sm font-bold">Tour de : <span id="draft-player-name" class="text-white"></span></p>
+        <p class="text-slate-500 text-xs mt-1" id="draft-progress-text"></p>
+    </div>
+
     <!-- Barre de progression ; masquée jusqu'au démarrage -->
     <div id="progression" class="w-full max-w-sm mb-8 hidden">
         <p id="progression-text" class="text-xs text-slate-500 font-mono mb-1 text-center"></p>
@@ -172,12 +233,26 @@
             <!-- Bouton qui appelle copyToClipboard() avec l'ID du textarea -->
             <button onclick="copyToClipboard('csv-output')" class="absolute top-3 right-3 bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1 rounded">Copier</button>
         </div>
+
+        <!-- Export image -->
+        <button onclick="exportResultImage(lastFinalData)" class="w-full flex items-center justify-center gap-2 bg-sky-700 hover:bg-sky-600 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm">
+            🖼️ Exporter en image
+        </button>
     </div>
 
     <!-- Bouton Rejouer affiché après un tirage complet -->
     <button id="btn-rejouer" class="w-full max-w-sm hidden items-center justify-center gap-2 text-center bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm mt-4 mb-6">
         🔄 Rejouer
     </button>
+
+    <!-- Résultats du draft (affiché en fin de draft) -->
+    <div id="draft-results" class="w-full max-w-sm mb-6 hidden">
+        <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3">Résultats du Draft</h3>
+        <div id="draft-results-list" class="space-y-3"></div>
+        <button id="btn-draft-reset" class="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2 rounded-xl transition-all">
+            🔄 Nouveau Draft
+        </button>
+    </div>
 
     <!-- Historique des tirages -->
     <div id="history-section" class="w-full max-w-sm mb-8 hidden">
@@ -192,6 +267,13 @@
     <script src="js/data.js"></script>
     <script src="js/sounds.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/draft.js"></script>
+    <script src="js/peer.js"></script>
+    <script src="js/export.js"></script>
+    <script>
+        if ('serviceWorker' in navigator)
+            navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
+    </script>
     <script>
         /**
          * Copie le contenu d'un textarea dans le presse-papier,

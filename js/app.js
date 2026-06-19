@@ -42,6 +42,7 @@ let currentMode = 'auto';       // Mode actif : 'auto' | 'rapide' | 'manuel'
 let manualResolve = null;    // Stocke la fonction resolve() d'une Promise en attente d'un clic
 let manualSessionId = 0;       // Identifie la session manuelle active
                               // (utilisé uniquement en mode manuel pour "débloquer" l'étape suivante)
+let lastFinalData = null;     // Dernier résultat complet (Phase 4 export)
 
 /**
  * Vibration helper using la Web Vibration API native du navigateur.
@@ -392,6 +393,7 @@ function waitManualClick() {
 // ── Timings d'animation ──────────────────────────────────────────────────────
 let PAUSE_DURATION = 2500; // Durée de la pause APRÈS chaque spin (ms) — laisse le temps de lire le résultat
 let SPIN_DURATION  = 4000; // Durée de l'animation de spin elle-même (ms)
+const shouldPause  = () => currentMode === 'auto';
 
 // ── Palette de couleurs ───────────────────────────────────────────────────────
 // Couleurs génériques pour les roues non-typées (rareté, stats, etc.)
@@ -569,11 +571,15 @@ function drawWheel(options, isType = false) {
  * @param {boolean} isType       - Active les couleurs de type pour le dessin
  * @returns {Promise<Object>}    - Résout avec l'objet option gagnant
  */
-function spinWheel(title, optionsArray, isType = false) {
+// forcedWinner : objet {label, percentage} connu à l'avance (utilisé par le guest en mode peer)
+function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
     // ── Mode rapide : pas d'animation, résolution instantanée ──
     if (currentMode === 'rapide') {
         return new Promise((resolve) => {
-            const winner = getRandomWeighted(optionsArray);
+            const winner = forcedWinner ?? getRandomWeighted(optionsArray);
+            if (typeof peerSend === 'function' && typeof peerRole !== 'undefined' && peerRole === 'host') {
+                peerSend({ type: 'spin', title, items: optionsArray.map(o => ({ label: o.label, percentage: o.percentage ?? o.weight ?? 1 })), isType, result: winner.label, mode: currentMode });
+            }
             resolve(winner);
         });
     }
@@ -597,8 +603,14 @@ function spinWheel(title, optionsArray, isType = false) {
         void wheelCanvas.offsetHeight; // Force le reflow — sans ça, le navigateur ignorerait le changement de style
 
         // ── Tirage du gagnant et calcul de l'angle cible ──
-        const winner   = getRandomWeighted(optionsArray);
-        const winIndex = optionsArray.indexOf(winner);
+        const winner   = forcedWinner ?? getRandomWeighted(optionsArray);
+
+        // Notifie le guest avant de démarrer l'animation (pour qu'ils animent en même temps)
+        if (typeof peerSend === 'function' && typeof peerRole !== 'undefined' && peerRole === 'host') {
+            peerSend({ type: 'spin', title, items: optionsArray.map(o => ({ label: o.label, percentage: o.percentage ?? o.weight ?? 1 })), isType, result: winner.label, mode: currentMode });
+        }
+
+        const winIndex = optionsArray.findIndex(o => o.label === winner.label);
         let segmentsCoords = displaySegments;
 
         // Choisit un point aléatoire DANS la tranche gagnante (avec marge pour ne pas tomber sur le bord)
@@ -615,9 +627,13 @@ function spinWheel(title, optionsArray, isType = false) {
 
         const targetRotation = currentRotation + minSpins + delta;
 
-        // Lance la transition CSS avec une courbe d'ease-out pour un effet naturel de décélération
-        wheelCanvas.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.15, 0.9, 0.25, 1)`;
-        wheelCanvas.style.transform  = `rotate(${targetRotation}deg)`;
+        // Lance la transition CSS — si hôte peer, on attend 150ms pour laisser le guest démarrer en même temps
+        const peerDelay = (typeof peerRole !== 'undefined' && peerRole === 'host') ? 150 : 0;
+        const _startAnim = () => {
+            wheelCanvas.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.15, 0.9, 0.25, 1)`;
+            wheelCanvas.style.transform  = `rotate(${targetRotation}deg)`;
+        };
+        if (peerDelay) setTimeout(_startAnim, peerDelay); else _startAnim();
 
         // ── Retour haptique pendant la rotation ──
         let lastSegment = -1;
@@ -675,7 +691,7 @@ function spinWheel(title, optionsArray, isType = false) {
             playReveal();
             launchConfetti(90);
             resolve(winner); // Résout la Promise → le flux async dans lanceDestinee() continue
-        }, SPIN_DURATION + 100); // +100ms de marge pour que la transition CSS soit vraiment terminée
+        }, SPIN_DURATION + 100 + peerDelay);
     });
 }
 
@@ -714,7 +730,8 @@ async function lanceDestinee(mode = 'auto') {
         manualResolve = null;
     }
 
-    if (isAnimating) return; // Sécurité anti-double-clic
+    if (isAnimating) return;
+    if (typeof draftActive !== 'undefined' && draftActive) return; // draft en cours → on ne lance pas un solo
     currentMode = mode;
     isSequenceRunning = true;
 
@@ -747,7 +764,7 @@ async function lanceDestinee(mode = 'auto') {
         addToSummary("Rareté", finalData.rarete);
         if (finalData.rarete === 'Starter') estimatedTotal += 3;
         if (finalData.rarete === 'Légendaire' || finalData.rarete === 'Fabuleux') estimatedTotal += 4;
-        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        if (shouldPause()) await pause(PAUSE_DURATION);
 
         // ── Étape 2 : Région d'origine ──
         updateProgress(estimatedTotal);
@@ -755,7 +772,7 @@ async function lanceDestinee(mode = 'auto') {
         const region = await spinWheel("2. Région d'origine", data.regions);
         finalData.region = region.label;
         addToSummary("Région", finalData.region);
-        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        if (shouldPause()) await pause(PAUSE_DURATION);
 
         // ── Étape 3 : Double Type ? ──
         updateProgress(estimatedTotal);
@@ -763,28 +780,31 @@ async function lanceDestinee(mode = 'auto') {
         const isDoubleType = await spinWheel("3. Double Type ?", data.doubleType);
         finalData.isDouble = isDoubleType.label === "Oui";
         if (finalData.isDouble) estimatedTotal += 1;
-        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        if (shouldPause()) await pause(PAUSE_DURATION);
 
-        // ── Étape 5 : Type Principal ──
+        // ── Étape 4 : Type Principal ──
         updateProgress(estimatedTotal);
         await waitManualClick();
         const type1 = await spinWheel("4. Type Principal", data.types, true);
         finalData.type1 = type1.label;
-        addToSummary("Type 1", `<span style="color:${typeColors[type1.label]}">${type1.label}</span>`);
 
-        // ── Étape 5b (conditionnelle) : Type Secondaire ──
+        // ── Étape 4b (conditionnelle) : Type Secondaire ──
         if (finalData.isDouble) {
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            if (shouldPause()) await pause(PAUSE_DURATION);
             updateProgress(estimatedTotal);
             let optionsType2 = data.types.filter(t => t.label !== finalData.type1);
             await waitManualClick();
             const type2 = await spinWheel("4b. Type Secondaire", optionsType2, true);
             finalData.type2 = type2.label;
-            addToSummary("Type 2", `<span style="color:${typeColors[type2.label]}">${type2.label}</span>`);
         } else {
             finalData.type2 = "Aucun";
         }
-        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+
+        addToSummary("Type 1", `<span style="color:${typeColors[finalData.type1]}">${finalData.type1}</span>`);
+        if (finalData.type2 !== 'Aucun') {
+            addToSummary("Type 2", `<span style="color:${typeColors[finalData.type2]}">${finalData.type2}</span>`);
+        }
+        if (shouldPause()) await pause(PAUSE_DURATION);
 
         // ── Étape 6 : Stats (une roue par stat, 6 au total) ──
         finalData.stats = {};
@@ -794,7 +814,7 @@ async function lanceDestinee(mode = 'auto') {
             const pulledStat = await spinWheel(`5. Stat : ${stat.label}`, data.statsValues);
             finalData.stats[stat.key] = pulledStat.value; // Stocke par clé (hp, atk, def, spa, spd, vit)
             addToSummary(stat.label, finalData.stats[stat.key]);
-            if (currentMode === 'auto') await pause(1000); // Pause plus courte entre les stats
+            if (shouldPause()) await pause(1000); // Pause plus courte entre les stats
         }
 
         // ── Bonus Starter : +10 sur 3 stats tirées par roue ──
@@ -809,7 +829,7 @@ async function lanceDestinee(mode = 'auto') {
                 // Grise la stat choisie pour les roues suivantes (sans la retirer)
                 const idx = starterPool.findIndex(s => s.key === pickedStat.key);
                 if (idx !== -1) starterPool[idx] = { ...starterPool[idx], percentage: 0, grayed: true };
-                if (currentMode === 'auto') await pause(PAUSE_DURATION);
+                if (shouldPause()) await pause(PAUSE_DURATION);
             }
         }
 
@@ -825,14 +845,14 @@ async function lanceDestinee(mode = 'auto') {
             await waitManualClick();
             const rarityBoost1 = await spinWheel(`${rarityLabel} : Stat boostée 1`, data.statsNames);
             addToSummary(`Stat ${rarityLabel} 1`, rarityBoost1.label, true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            if (shouldPause()) await pause(PAUSE_DURATION);
 
             updateProgress(estimatedTotal);
             await waitManualClick();
             const rarityBoostVal1 = await spinWheel(`Boost (${rarityBoost1.label})`, rarityValPool);
             finalData.stats[rarityBoost1.key] += rarityBoostVal1.value;
             addToSummary(`Boost ${rarityLabel} ${rarityBoost1.label}`, `+${rarityBoostVal1.value} (Total: ${finalData.stats[rarityBoost1.key]})`, true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            if (shouldPause()) await pause(PAUSE_DURATION);
 
             const rarityPool2 = data.statsNames.map(s =>
                 s.key === rarityBoost1.key ? { ...s, percentage: 0, grayed: true } : { ...s }
@@ -841,14 +861,14 @@ async function lanceDestinee(mode = 'auto') {
             await waitManualClick();
             const rarityBoost2 = await spinWheel(`${rarityLabel} : Stat boostée 2`, rarityPool2);
             addToSummary(`Stat ${rarityLabel} 2`, rarityBoost2.label, true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            if (shouldPause()) await pause(PAUSE_DURATION);
 
             updateProgress(estimatedTotal);
             await waitManualClick();
             const rarityBoostVal2 = await spinWheel(`Boost (${rarityBoost2.label})`, rarityValPool);
             finalData.stats[rarityBoost2.key] += rarityBoostVal2.value;
             addToSummary(`Boost ${rarityLabel} ${rarityBoost2.label}`, `+${rarityBoostVal2.value} (Total: ${finalData.stats[rarityBoost2.key]})`, true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            if (shouldPause()) await pause(PAUSE_DURATION);
         }
 
         // ── Étape 6 : Méga-Évolution ──
@@ -858,7 +878,7 @@ async function lanceDestinee(mode = 'auto') {
         finalData.isMega = mega.label === "Oui";
         addToSummary("Méga-Evo", finalData.isMega ? "Oui" : "Non");
         if (finalData.isMega) estimatedTotal += 4;
-        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        if (shouldPause()) await pause(PAUSE_DURATION);
 
         // ── Étapes 5a/5b (conditionnelles) : Boosts Méga ──
         if (finalData.isMega) {
@@ -870,7 +890,7 @@ async function lanceDestinee(mode = 'auto') {
             const megaStatsPool = data.statsNames.filter(s => s.key !== 'hp');
             const boost1 = await spinWheel("Méga : Stat boostée 1", megaStatsPool);
             addToSummary("Stat Méga 1", boost1.label, true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            if (shouldPause()) await pause(PAUSE_DURATION);
 
             // ── Roue : valeur du boost 1 ──
             updateProgress(estimatedTotal);
@@ -879,7 +899,7 @@ async function lanceDestinee(mode = 'auto') {
             finalData.stats[boost1.key] += boostVal1.value;
             finalData.megaBoosts[boost1.key] = boostVal1.value;
             addToSummary(`Boost Méga ${boost1.label}`, `+${boostVal1.value} (Total: ${finalData.stats[boost1.key]})`, true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            if (shouldPause()) await pause(PAUSE_DURATION);
 
             // ── Roue : quelle stat est boostée en second ? (PV exclu ; boost1 grisé) ──
             const statsNamesPool2 = data.statsNames
@@ -889,7 +909,7 @@ async function lanceDestinee(mode = 'auto') {
             await waitManualClick();
             const boost2 = await spinWheel("Méga : Stat boostée 2", statsNamesPool2);
             addToSummary("Stat Méga 2", boost2.label, true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            if (shouldPause()) await pause(PAUSE_DURATION);
         
             // ── Roue : valeur du boost 2 ──
             updateProgress(estimatedTotal);
@@ -898,7 +918,7 @@ async function lanceDestinee(mode = 'auto') {
             finalData.stats[boost2.key] += boostVal2.value;
             finalData.megaBoosts[boost2.key] = boostVal2.value;
             addToSummary(`Boost Méga ${boost2.label}`, `+${boostVal2.value} (Total: ${finalData.stats[boost2.key]})`, true);
-            if (currentMode === 'auto') await pause(PAUSE_DURATION);
+            if (shouldPause()) await pause(PAUSE_DURATION);
         }
 
         // ── Étape 6 : Shiny ──
@@ -912,12 +932,13 @@ async function lanceDestinee(mode = 'auto') {
         } else {
             addToSummary("Shiny", "Non");
         }
-        if (currentMode === 'auto') await pause(PAUSE_DURATION);
+        if (shouldPause()) await pause(PAUSE_DURATION);
 
         // ── Fin du tirage ──
         titleElem.textContent = "Destinée Générée !";
         playFanfare();
-        generateOutputs(finalData); // Construit et affiche le prompt + le CSV
+        generateOutputs(finalData);
+        lastFinalData = finalData;
 
     } catch (e) {
         console.error(e);
@@ -1173,15 +1194,14 @@ function initWheel() {
     }
 }
 
-initWheel();
+initData().then(() => {
+    initWheel();
 
-// Initialise le compteur et l'historique au chargement
-const savedCount = parseInt(localStorage.getItem('roue-count') || '0');
-if (counterDisplay && savedCount > 0) counterDisplay.textContent = `${savedCount} Fakemon générés`;
-renderHistory();
+    const savedCount = parseInt(localStorage.getItem('roue-count') || '0');
+    if (counterDisplay && savedCount > 0) counterDisplay.textContent = `${savedCount} Fakemon générés`;
+    renderHistory();
 
-// Si on vient de la page settings (bouton Tester), permette un aperçu rapide
-if (new URLSearchParams(location.search).get('previewConfetti') === '1') {
-    // delay léger pour que le canvas et le wrapper aient eu le temps de se dimensionner
-    setTimeout(() => launchConfetti(45), 250);
-}
+    if (new URLSearchParams(location.search).get('previewConfetti') === '1') {
+        setTimeout(() => launchConfetti(45), 250);
+    }
+});

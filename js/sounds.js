@@ -11,6 +11,12 @@ function _ctx() {
     return _audioCtx;
 }
 
+// Déverrouille l'AudioContext dès le premier clic (requis par les navigateurs modernes)
+document.addEventListener('click', function _unlockAudio() {
+    _ctx();
+    document.removeEventListener('click', _unlockAudio);
+}, { once: true });
+
 function toggleMute() {
     _isMuted = !_isMuted;
     localStorage.setItem('roue-muted', _isMuted ? '1' : '0');
