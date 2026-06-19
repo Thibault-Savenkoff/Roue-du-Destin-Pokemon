@@ -66,16 +66,32 @@
         /* ── THÈMES ─────────────────────────────────────────────── */
         :root {
             --accent: #f59e0b;
-            --accent-hover: #d97706;
-            --accent-ring: #fbbf24;
         }
-        [data-theme="ecarlate"] { --accent: #ef4444; --accent-hover: #dc2626; --accent-ring: #f87171; }
-        [data-theme="violet"]   { --accent: #8b5cf6; --accent-hover: #7c3aed; --accent-ring: #a78bfa; }
+        [data-theme="ecarlate"] { --accent: #ef4444; }
+        [data-theme="violet"]   { --accent: #8b5cf6; }
 
-        .theme-btn { background: var(--accent); }
-        .theme-btn:hover { background: var(--accent-hover); }
-        /* Gradient title text */
-        .theme-title { background-image: linear-gradient(to right, var(--accent), color-mix(in srgb, var(--accent) 50%, #f97316)); }
+        /* Fond de page */
+        [data-theme="ecarlate"],
+        [data-theme="ecarlate"] .bg-slate-900  { background-color: #1c0505 !important; }
+        [data-theme="ecarlate"] .bg-slate-800  { background-color: #2d0a0a !important; }
+        [data-theme="ecarlate"] .bg-slate-700,
+        [data-theme="ecarlate"] .bg-slate-700\/60 { background-color: #471212 !important; }
+        [data-theme="ecarlate"] .border-slate-700 { border-color: #5f1515 !important; }
+        [data-theme="ecarlate"] .border-slate-600 { border-color: #7a1c1c !important; }
+        [data-theme="ecarlate"] .border-purple-900 { border-color: #7a1c1c !important; }
+        [data-theme="ecarlate"] .border-green-900  { border-color: #5f1515 !important; }
+        [data-theme="ecarlate"] .border-teal-900   { border-color: #5f1515 !important; }
+
+        [data-theme="violet"],
+        [data-theme="violet"] .bg-slate-900  { background-color: #0f0b1f !important; }
+        [data-theme="violet"] .bg-slate-800  { background-color: #1a1233 !important; }
+        [data-theme="violet"] .bg-slate-700,
+        [data-theme="violet"] .bg-slate-700\/60 { background-color: #2a1f4a !important; }
+        [data-theme="violet"] .border-slate-700 { border-color: #3d2e6b !important; }
+        [data-theme="violet"] .border-slate-600 { border-color: #4f3d88 !important; }
+        [data-theme="violet"] .border-purple-900 { border-color: #3d2e6b !important; }
+        [data-theme="violet"] .border-green-900  { border-color: #2a1f4a !important; }
+        [data-theme="violet"] .border-teal-900   { border-color: #2a1f4a !important; }
 
         /* Animation d'apparition des cartes output */
         @keyframes fadeSlideUp {
