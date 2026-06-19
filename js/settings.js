@@ -97,8 +97,7 @@ function renderConfettiControls() {
 }
 
 // Copie profonde des données courantes pour permettre l'édition sans modifier l'original.
-// On utilise JSON.parse(JSON.stringify(...)) car les données contiennent des objets imbriqués.
-let editingData = JSON.parse(JSON.stringify(data));
+let editingData = null;
 
 /**
  * render()
@@ -241,5 +240,7 @@ btnReset.addEventListener('click', () => {
 });
 
 // === INITIALISATION ===
-// Premier rendu du formulaire au chargement de la page
-render();
+initData().then(() => {
+    editingData = JSON.parse(JSON.stringify(data));
+    render();
+});
