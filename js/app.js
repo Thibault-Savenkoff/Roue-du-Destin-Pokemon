@@ -940,6 +940,7 @@ async function lanceDestinee(mode = 'auto') {
         playFanfare();
         generateOutputs(finalData);
         lastFinalData = finalData;
+        setTimeout(() => outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
 
     } catch (e) {
         console.error(e);
@@ -1023,18 +1024,26 @@ function generateOutputs(d) {
     // ── Nom du Fakemon ──
     if (suggestedName) {
         const nameEl = document.getElementById('fakemon-name-display');
-        if (nameEl) { nameEl.textContent = suggestedName; nameEl.parentElement?.classList.remove('hidden'); }
+        const nameCard = document.getElementById('fakemon-name-card');
+        if (nameEl && nameCard) {
+            nameEl.textContent = suggestedName;
+            nameCard.style.animationDelay = '0.1s';
+            nameCard.classList.remove('hidden');
+        }
     }
+
+    // ── Animation stats ──
+    const statCard = document.getElementById('stat-animation-card');
+    if (statCard) statCard.style.animationDelay = '0.25s';
+    animateStatCard(baseStats);
 
     // ── Faiblesses ──
     if (typeof computeWeaknesses === 'function') {
         const weakEl = document.getElementById('weakness-display');
         if (weakEl) renderWeaknessDisplay(weakEl, d.type1, d.type2);
-        document.getElementById('weakness-section')?.classList.remove('hidden');
+        const weakSection = document.getElementById('weakness-section');
+        if (weakSection) { weakSection.style.animationDelay = '0.4s'; weakSection.classList.remove('hidden'); }
     }
-
-    // ── Animation stats ──
-    animateStatCard(baseStats);
 
     saveToHistory(d, promptV2);
     updateCounter();
@@ -1075,23 +1084,28 @@ function animateStatCard(stats) {
             <span id="stat-anim-${k.key}" class="text-lg font-bold text-slate-100">0</span>
          </div>`
     ).join('');
-    const target = { ...stats };
-    const start = performance.now();
-    const DURATION = 900;
-    function tick(now) {
-        const p = Math.min(1, (now - start) / DURATION);
-        const ease = 1 - Math.pow(1 - p, 3);
-        keys.forEach(k => {
-            const el2 = document.getElementById(`stat-anim-${k.key}`);
-            if (el2) el2.textContent = Math.round((target[k.key] || 0) * ease);
-        });
-        if (p < 1) requestAnimationFrame(tick);
-        else keys.forEach(k => {
-            const el2 = document.getElementById(`stat-anim-${k.key}`);
-            if (el2) el2.textContent = target[k.key] || 0;
-        });
+
+    function runCounter() {
+        const target = { ...stats };
+        const start = performance.now();
+        const DURATION = 900;
+        function tick(now) {
+            const p = Math.min(1, (now - start) / DURATION);
+            const ease = 1 - Math.pow(1 - p, 3);
+            keys.forEach(k => {
+                const el2 = document.getElementById(`stat-anim-${k.key}`);
+                if (el2) el2.textContent = Math.round((target[k.key] || 0) * ease);
+            });
+            if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
     }
-    requestAnimationFrame(tick);
+
+    // Déclenche le compteur quand la carte devient visible
+    const obs = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) { obs.disconnect(); runCounter(); }
+    }, { threshold: 0.3 });
+    obs.observe(card);
 }
 
 // ── Historique & Compteur ─────────────────────────────────────────────────────
