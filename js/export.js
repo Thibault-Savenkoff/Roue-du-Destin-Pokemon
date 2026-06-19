@@ -241,6 +241,7 @@ function exportResultSVG(d) {
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;800&amp;display=swap');</style>
     <linearGradient id="bgG" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#0f172a"/>
       <stop offset="100%" stop-color="#1e293b"/>
