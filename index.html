@@ -62,6 +62,27 @@
 
         /* Résumé du tirage visible en TikTok (révélation finale) */
         /* La visibilité est gérée par le JS — on retire juste le display:none forcé */
+
+        /* ── THÈMES ─────────────────────────────────────────────── */
+        :root {
+            --accent: #f59e0b;
+            --accent-hover: #d97706;
+            --accent-ring: #fbbf24;
+        }
+        [data-theme="ecarlate"] { --accent: #ef4444; --accent-hover: #dc2626; --accent-ring: #f87171; }
+        [data-theme="violet"]   { --accent: #8b5cf6; --accent-hover: #7c3aed; --accent-ring: #a78bfa; }
+
+        .theme-btn { background: var(--accent); }
+        .theme-btn:hover { background: var(--accent-hover); }
+        /* Gradient title text */
+        .theme-title { background-image: linear-gradient(to right, var(--accent), color-mix(in srgb, var(--accent) 50%, #f97316)); }
+
+        /* Animation d'apparition des cartes output */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .reveal-card { animation: fadeSlideUp 0.4s ease both; }
     </style>
 </head>
 <body class="font-['Poppins'] flex flex-col items-center justify-start min-h-screen p-4 pb-12 overflow-x-hidden">
@@ -72,12 +93,17 @@
             <!-- Bouton qui bascule la classe "tiktok-mode" sur le body -->
             <button onclick="const on=document.body.classList.toggle('tiktok-mode');if(on)document.dispatchEvent(new CustomEvent('tiktok-start'));" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">📱 Mode TikTok</button>
             <button id="btn-son" onclick="this.textContent = toggleMute() ? '🔇' : '🔊'" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">🔊</button>
-            <!-- Lien vers la page de paramètres (settings.html) -->
             <a href="settings.html" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">⚙️ Paramètres</a>
         </div>
-        <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-2">Roue du Destin</h1>
+        <h1 class="text-3xl font-extrabold text-transparent bg-clip-text theme-title mb-2" style="background-image: linear-gradient(to right, var(--accent), #f97316)">Roue du Destin</h1>
         <p class="text-slate-400 text-sm">Générateur de Pokémon</p>
         <p id="counter-display" class="text-slate-600 text-xs mt-1"></p>
+        <!-- Sélecteur de thème -->
+        <div class="flex gap-2 mt-2 justify-center">
+            <button onclick="setTheme('')"         class="w-5 h-5 rounded-full bg-amber-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-amber-300 transition-all" title="Ambre"></button>
+            <button onclick="setTheme('ecarlate')" class="w-5 h-5 rounded-full bg-red-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-red-300 transition-all" title="Écarlate"></button>
+            <button onclick="setTheme('violet')"   class="w-5 h-5 rounded-full bg-violet-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-violet-300 transition-all" title="Violet"></button>
+        </div>
     </header>
 
     <!-- ===== ZONE DE LA ROUE ===== -->
@@ -219,6 +245,25 @@
          Section affichée uniquement après la fin d'un tirage complet (AUTO).
          Contient deux zones de texte en lecture seule avec boutons "Copier". -->
     <div id="output-section" class="w-full max-w-sm space-y-6 hidden">
+
+        <!-- Nom suggéré -->
+        <div id="fakemon-name-card" class="hidden reveal-card bg-slate-800 rounded-xl p-4 border border-amber-900 text-center">
+            <p class="text-xs text-slate-500 mb-1 uppercase tracking-wider">Nom suggéré</p>
+            <p id="fakemon-name-display" class="text-2xl font-extrabold" style="color: var(--accent)"></p>
+        </div>
+
+        <!-- Stats animées -->
+        <div id="stat-animation-card" class="hidden reveal-card bg-slate-800 rounded-xl p-4 border border-slate-700">
+            <p class="text-xs text-slate-500 mb-2 uppercase tracking-wider">Stats de base</p>
+            <div class="grid grid-cols-6 gap-1"></div>
+        </div>
+
+        <!-- Faiblesses -->
+        <div id="weakness-section" class="hidden reveal-card bg-slate-800 rounded-xl p-4 border border-red-900/50">
+            <h3 class="text-sm font-bold text-red-400 mb-3">Couverture de types</h3>
+            <div id="weakness-display"></div>
+        </div>
+
         <!-- Prompt ChatGPT -->
         <div class="bg-slate-800 rounded-xl p-4 border border-purple-900 relative">
             <h3 class="text-sm font-bold text-purple-400 mb-2">Prompt ChatGPT</h3>
@@ -249,16 +294,24 @@
     <div id="draft-results" class="w-full max-w-sm mb-6 hidden">
         <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3">Résultats du Draft</h3>
         <div id="draft-results-list" class="space-y-3"></div>
-        <button id="btn-draft-reset" class="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2 rounded-xl transition-all">
-            🔄 Nouveau Draft
-        </button>
+        <div class="flex gap-2 mt-4">
+            <button id="btn-draft-share" onclick="shareDraftResults()" class="hidden flex-1 bg-sky-800 hover:bg-sky-700 text-white text-sm font-bold py-2 rounded-xl transition-all">
+                🔗 Partager
+            </button>
+            <button id="btn-draft-reset" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2 rounded-xl transition-all">
+                🔄 Nouveau Draft
+            </button>
+        </div>
     </div>
 
     <!-- Historique des tirages -->
     <div id="history-section" class="w-full max-w-sm mb-8 hidden">
         <div class="flex justify-between items-center mb-3">
             <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest">Historique</h3>
-            <button onclick="clearAllHistory()" class="text-xs text-slate-600 hover:text-red-400 transition-colors">Tout supprimer</button>
+            <div class="flex gap-2 items-center">
+                <button id="btn-history-sort" onclick="toggleHistorySort()" class="text-xs text-slate-500 hover:text-white bg-slate-800 px-2 py-0.5 rounded transition-colors">📅 Date</button>
+                <button onclick="clearAllHistory()" class="text-xs text-slate-600 hover:text-red-400 transition-colors">Tout supprimer</button>
+            </div>
         </div>
         <div id="history-list" class="space-y-2"></div>
     </div>
@@ -266,6 +319,8 @@
     <!-- Chargement du module JS principal qui gère toute la logique de la roue -->
     <script src="js/data.js"></script>
     <script src="js/sounds.js"></script>
+    <script src="js/naming.js"></script>
+    <script src="js/typeChart.js"></script>
     <script src="js/app.js"></script>
     <script src="js/draft.js"></script>
     <script src="js/peer.js"></script>
@@ -273,6 +328,16 @@
     <script>
         if ('serviceWorker' in navigator)
             navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
+
+        // Thèmes
+        function setTheme(t) {
+            document.documentElement.dataset.theme = t;
+            localStorage.setItem('roue-theme', t);
+        }
+        (function() {
+            const saved = localStorage.getItem('roue-theme');
+            if (saved) document.documentElement.dataset.theme = saved;
+        })();
     </script>
     <script>
         /**

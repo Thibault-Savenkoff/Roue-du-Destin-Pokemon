@@ -43,6 +43,7 @@ let manualResolve = null;    // Stocke la fonction resolve() d'une Promise en at
 let manualSessionId = 0;       // Identifie la session manuelle active
                               // (utilisé uniquement en mode manuel pour "débloquer" l'étape suivante)
 let lastFinalData = null;     // Dernier résultat complet (Phase 4 export)
+let historySortBy = 'date';  // 'date' | 'bst'
 
 /**
  * Vibration helper using la Web Vibration API native du navigateur.
@@ -1002,6 +1003,10 @@ function generateOutputs(d) {
     }
     if (d.isShiny) promptV2 += `\n- Version Shiny`;
 
+    // Nom suggéré (non contraignant, juste pour guider l'IA)
+    const suggestedName = typeof generateFakemonName === 'function' ? generateFakemonName(d.type1) : null;
+    if (suggestedName) promptV2 += `\n- Nom suggéré (ou inspiration) : ${suggestedName}`;
+
     promptV2 += `\n\n⚠️ Génère uniquement la forme de base (stade 1), même si le Pokémon a une ou deux évolutions.`;
 
     promptV2 += `\n\n【 À générer 】`;
@@ -1014,10 +1019,79 @@ function generateOutputs(d) {
     promptOutputV2.value = promptV2;
 
     outputSection.classList.remove('hidden');
+
+    // ── Nom du Fakemon ──
+    if (suggestedName) {
+        const nameEl = document.getElementById('fakemon-name-display');
+        if (nameEl) { nameEl.textContent = suggestedName; nameEl.parentElement?.classList.remove('hidden'); }
+    }
+
+    // ── Faiblesses ──
+    if (typeof computeWeaknesses === 'function') {
+        const weakEl = document.getElementById('weakness-display');
+        if (weakEl) renderWeaknessDisplay(weakEl, d.type1, d.type2);
+        document.getElementById('weakness-section')?.classList.remove('hidden');
+    }
+
+    // ── Animation stats ──
+    animateStatCard(baseStats);
+
     saveToHistory(d, promptV2);
     updateCounter();
 
     vibrate([100, 50, 100, 50, 400]);
+}
+
+// ── Faiblesses ────────────────────────────────────────────────────────────────
+function renderWeaknessDisplay(el, type1, type2) {
+    const groups = computeWeaknesses(type1, type2);
+    const pill = (t, cls) => `<span class="${cls} text-xs px-2 py-0.5 rounded-full font-bold">${t}</span>`;
+    const row = (label, color, types) => types.length === 0 ? '' :
+        `<div class="flex flex-wrap gap-1 items-center mb-1">
+            <span class="text-xs text-slate-500 w-12 shrink-0">${label}</span>
+            ${types.map(t => pill(t, color)).join('')}
+         </div>`;
+    el.innerHTML =
+        row('×4',    'bg-red-800 text-red-200',        groups[4])   +
+        row('×2',    'bg-red-900/60 text-red-300',     groups[2])   +
+        row('×½',    'bg-green-900/60 text-green-300', groups[0.5]) +
+        row('×¼',    'bg-green-800 text-green-200',    groups[0.25])+
+        row('imm.',  'bg-slate-700 text-slate-400',    groups[0]);
+}
+
+// ── Animation de stats ────────────────────────────────────────────────────────
+function animateStatCard(stats) {
+    const card = document.getElementById('stat-animation-card');
+    if (!card) return;
+    card.classList.remove('hidden');
+    const el = card.querySelector('.grid') || card;
+    const keys = [
+        { key: 'hp', label: 'PV' }, { key: 'atk', label: 'ATK' }, { key: 'def', label: 'DEF' },
+        { key: 'spa', label: 'ATK.S' }, { key: 'spd', label: 'DEF.S' }, { key: 'vit', label: 'VIT' },
+    ];
+    el.innerHTML = keys.map(k =>
+        `<div class="flex flex-col items-center bg-slate-900 rounded-lg py-2 px-1">
+            <span class="text-xs text-slate-500">${k.label}</span>
+            <span id="stat-anim-${k.key}" class="text-lg font-bold text-slate-100">0</span>
+         </div>`
+    ).join('');
+    const target = { ...stats };
+    const start = performance.now();
+    const DURATION = 900;
+    function tick(now) {
+        const p = Math.min(1, (now - start) / DURATION);
+        const ease = 1 - Math.pow(1 - p, 3);
+        keys.forEach(k => {
+            const el2 = document.getElementById(`stat-anim-${k.key}`);
+            if (el2) el2.textContent = Math.round((target[k.key] || 0) * ease);
+        });
+        if (p < 1) requestAnimationFrame(tick);
+        else keys.forEach(k => {
+            const el2 = document.getElementById(`stat-anim-${k.key}`);
+            if (el2) el2.textContent = target[k.key] || 0;
+        });
+    }
+    requestAnimationFrame(tick);
 }
 
 // ── Historique & Compteur ─────────────────────────────────────────────────────
@@ -1041,11 +1115,19 @@ function saveToHistory(d, prompt) {
     renderHistory();
 }
 
+function toggleHistorySort() {
+    historySortBy = historySortBy === 'date' ? 'bst' : 'date';
+    const btn = document.getElementById('btn-history-sort');
+    if (btn) btn.textContent = historySortBy === 'bst' ? '🏆 BST ↓' : '📅 Date';
+    renderHistory();
+}
+
 function renderHistory() {
-    const history = JSON.parse(localStorage.getItem('roue-history') || '[]');
+    let history = JSON.parse(localStorage.getItem('roue-history') || '[]');
     if (!historyList || !historySection) return;
     if (history.length === 0) { historySection.classList.add('hidden'); return; }
     historySection.classList.remove('hidden');
+    if (historySortBy === 'bst') history = [...history].sort((a, b) => b.bst - a.bst);
     historyList.innerHTML = history.map((h, i) => {
         const badges = [h.isMega ? '⚡Méga' : '', h.isShiny ? '✨Shiny' : ''].filter(Boolean).join(' ');
         return `<div data-swipe="${i}" class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden" style="touch-action:pan-y">

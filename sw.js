@@ -1,4 +1,4 @@
-const CACHE = 'roue-destin-v1';
+const CACHE = 'roue-destin-v2';
 
 const PRECACHE = [
     './',
@@ -11,6 +11,8 @@ const PRECACHE = [
     './js/draft.js',
     './js/peer.js',
     './js/export.js',
+    './js/naming.js',
+    './js/typeChart.js',
     './icons/icon-192.png',
     './icons/icon-512.png',
     'https://cdn.tailwindcss.com',

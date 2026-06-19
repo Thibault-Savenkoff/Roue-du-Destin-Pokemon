@@ -275,7 +275,53 @@ function renderDraftResults() {
         `;
         list.appendChild(card);
     });
+
+    // Bouton de partage
+    const shareBtn = document.getElementById('btn-draft-share');
+    if (shareBtn) shareBtn.classList.remove('hidden');
 }
+
+function shareDraftResults() {
+    if (!draftResults.length) return;
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(draftResults))));
+    const url = `${location.origin}${location.pathname}?draft=${encoded}`;
+    const btn = document.getElementById('btn-draft-share');
+    const showFeedback = (ok) => {
+        if (!btn) return;
+        const orig = btn.textContent;
+        btn.textContent = ok ? '✅ Lien copié !' : '❌ Erreur';
+        setTimeout(() => { btn.textContent = orig; }, 2500);
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => showFeedback(true)).catch(() => showFeedback(false));
+    else {
+        const ta = document.createElement('textarea');
+        ta.value = url; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        showFeedback(true);
+    }
+}
+
+// Lecture auto des résultats partagés via URL ?draft=…
+(function loadSharedDraft() {
+    const param = new URLSearchParams(location.search).get('draft');
+    if (!param) return;
+    try {
+        const results = JSON.parse(decodeURIComponent(escape(atob(param))));
+        // Affiche les résultats une fois le DOM prêt
+        window.addEventListener('DOMContentLoaded', () => {
+            draftResults = results;
+            const list = document.getElementById('draft-results-list');
+            const section = document.getElementById('draft-results');
+            if (!list || !section) return;
+            renderDraftResults();
+            section.classList.remove('hidden');
+            const banner = document.createElement('p');
+            banner.className = 'text-center text-xs text-slate-500 mb-2';
+            banner.textContent = '👁 Résultats de draft partagés — lecture seule';
+            section.prepend(banner);
+        }, { once: true });
+    } catch { /* URL invalide, on ignore */ }
+})();
 
 // === Bindings ===
 (function () {
