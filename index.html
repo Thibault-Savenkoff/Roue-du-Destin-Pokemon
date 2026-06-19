@@ -295,10 +295,16 @@
             <button onclick="copyToClipboard('csv-output')" class="absolute top-3 right-3 bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1 rounded">Copier</button>
         </div>
 
-        <!-- Export image -->
-        <button onclick="exportResultImage(lastFinalData)" class="w-full flex items-center justify-center gap-2 bg-sky-700 hover:bg-sky-600 text-white font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition-all text-sm">
-            🖼️ Exporter en image
-        </button>
+        <!-- Export -->
+        <div class="space-y-2">
+            <p class="text-xs text-slate-500 text-center uppercase tracking-wider">Exporter</p>
+            <div class="grid grid-cols-4 gap-2">
+                <button onclick="exportResultImage(lastFinalData,'png')"  class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">PNG</button>
+                <button onclick="exportResultImage(lastFinalData,'jpeg')" class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">JPEG</button>
+                <button onclick="exportResultImage(lastFinalData,'webp')" class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">WebP</button>
+                <button onclick="exportResultSVG(lastFinalData)"          class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">SVG</button>
+            </div>
+        </div>
     </div>
 
     <!-- Bouton Rejouer affiché après un tirage complet -->
