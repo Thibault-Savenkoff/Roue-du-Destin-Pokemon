@@ -941,7 +941,7 @@ async function lanceDestinee(mode = 'auto') {
         generateOutputs(finalData);
         lastFinalData = finalData;
         setTimeout(() => {
-            const top = outputSection.getBoundingClientRect().top + window.scrollY - 80;
+            const top = outputSection.getBoundingClientRect().top + window.scrollY - 40;
             window.scrollTo({ top, behavior: 'smooth' });
         }, 300);
 
