@@ -1027,14 +1027,14 @@ function generateOutputs(d) {
         const nameCard = document.getElementById('fakemon-name-card');
         if (nameEl && nameCard) {
             nameEl.textContent = suggestedName;
-            nameCard.style.animationDelay = '0.1s';
+            nameCard.style.animationDelay = '0.2s';
             nameCard.classList.remove('hidden');
         }
     }
 
     // ── Animation stats ──
     const statCard = document.getElementById('stat-animation-card');
-    if (statCard) statCard.style.animationDelay = '0.25s';
+    if (statCard) statCard.style.animationDelay = '0.6s';
     animateStatCard(baseStats);
 
     // ── Faiblesses ──
@@ -1042,7 +1042,7 @@ function generateOutputs(d) {
         const weakEl = document.getElementById('weakness-display');
         if (weakEl) renderWeaknessDisplay(weakEl, d.type1, d.type2);
         const weakSection = document.getElementById('weakness-section');
-        if (weakSection) { weakSection.style.animationDelay = '0.4s'; weakSection.classList.remove('hidden'); }
+        if (weakSection) { weakSection.style.animationDelay = '1.0s'; weakSection.classList.remove('hidden'); }
     }
 
     saveToHistory(d, promptV2);
@@ -1088,7 +1088,7 @@ function animateStatCard(stats) {
     function runCounter() {
         const target = { ...stats };
         const start = performance.now();
-        const DURATION = 900;
+        const DURATION = 1800;
         function tick(now) {
             const p = Math.min(1, (now - start) / DURATION);
             const ease = 1 - Math.pow(1 - p, 3);
