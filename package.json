@@ -5,7 +5,7 @@
   "main": "sw.js",
   "scripts": {
     "build": "rm -rf www && mkdir www && cp index.html settings.html manifest.json data.json sw.js www/ && cp -r js icons www/",
-    "sync": "npm run build && npx cap sync"
+    "sync": "npm run build && cp -r www/. ios/App/App/public/"
   },
   "repository": {
     "type": "git",

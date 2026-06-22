@@ -1,14 +1,6 @@
 import UIKit
 import WebKit
 
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
-    var window: UIWindow?
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        return true
-    }
-}
-
 class ViewController: UIViewController, WKScriptMessageHandler {
 
     var webView: WKWebView!
@@ -34,13 +26,13 @@ class ViewController: UIViewController, WKScriptMessageHandler {
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.name == "haptic", let preset = message.body as? String else { return }
         switch preset {
-        case "heavy":     UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-        case "light":     UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        case "heavy":   UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        case "light":   UIImpactFeedbackGenerator(style: .light).impactOccurred()
         case "selection": UISelectionFeedbackGenerator().selectionChanged()
-        case "success":   UINotificationFeedbackGenerator().notificationOccurred(.success)
-        case "warning":   UINotificationFeedbackGenerator().notificationOccurred(.warning)
-        case "error":     UINotificationFeedbackGenerator().notificationOccurred(.error)
-        default:          UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        case "success": UINotificationFeedbackGenerator().notificationOccurred(.success)
+        case "warning": UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        case "error":   UINotificationFeedbackGenerator().notificationOccurred(.error)
+        default:        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         }
     }
 }

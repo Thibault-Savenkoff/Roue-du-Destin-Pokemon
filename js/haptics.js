@@ -1,15 +1,8 @@
-// Capacitor native haptics (iOS app) — no gesture window limit
-if (window.Capacitor?.isNativePlatform?.()) {
-    const H = window.Capacitor.Plugins.Haptics;
+// Native iOS haptics via WKWebView message handler — no gesture window limit
+if (window.webkit?.messageHandlers?.haptic) {
     window._h = {
         trigger(preset) {
-            if (preset === 'success' || preset === 'warning' || preset === 'error') {
-                H.notification({ type: preset.toUpperCase() });
-            } else if (preset === 'selection') {
-                H.selectionChanged();
-            } else {
-                H.impact({ style: { light:'LIGHT', heavy:'HEAVY' }[preset] || 'MEDIUM' });
-            }
+            window.webkit.messageHandlers.haptic.postMessage(preset);
         }
     };
 } else {
