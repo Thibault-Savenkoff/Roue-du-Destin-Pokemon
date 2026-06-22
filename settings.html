@@ -43,8 +43,24 @@
         </button>
     </div>
 
+    <!-- Debug -->
+    <div class="w-full max-w-sm bg-slate-800 rounded-2xl border border-slate-700 p-4 mb-4">
+        <p class="text-xs text-slate-400 mb-3 uppercase tracking-wider font-bold">Debug</p>
+        <button id="btn-debug-haptics" onclick="
+            const on = !localStorage.getItem('roue-debug-haptics');
+            on ? localStorage.setItem('roue-debug-haptics','1') : localStorage.removeItem('roue-debug-haptics');
+            this.textContent = on ? '🔴 Haptics debug : ON' : '⚫ Haptics debug : OFF';
+        " class="w-full bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2 rounded-xl transition-all">
+            ⚫ Haptics debug : OFF
+        </button>
+    </div>
+
     <!-- Chargement du module JS qui gère la logique des paramètres -->
     <script src="js/data.js"></script>
     <script src="js/settings.js"></script>
+    <script>
+        const _dbgBtn = document.getElementById('btn-debug-haptics');
+        if (localStorage.getItem('roue-debug-haptics')) _dbgBtn.textContent = '🔴 Haptics debug : ON';
+    </script>
 </body>
 </html>
