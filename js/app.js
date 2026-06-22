@@ -630,8 +630,10 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
         // ── Retour haptique pendant la rotation ──
         let lastSegment = -1;
         let startTime   = performance.now();
+        let landingHapticFired = false;
 
         function tickHaptics(time) {
+            const elapsed = time - startTime;
             const computedStyle = window.getComputedStyle(wheelCanvas);
             const matrix = new (window.WebKitCSSMatrix || window.DOMMatrix)(computedStyle.transform);
             let rot = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI);
@@ -654,10 +656,16 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
             }
             lastSegment = currentSegment;
 
-            if (time - startTime < SPIN_DURATION) {
+            // À 45% du spin (~1800ms) : heavy dans la fenêtre iOS de 2s
+            if (!landingHapticFired && elapsed >= SPIN_DURATION * 0.45) {
+                window._h?.trigger('heavy');
+                landingHapticFired = true;
+            }
+
+            if (elapsed < SPIN_DURATION) {
                 requestAnimationFrame(tickHaptics);
             } else {
-                window._h?.trigger('medium');
+                window._h?.trigger('medium'); // Android uniquement
             }
         }
         requestAnimationFrame(tickHaptics);
