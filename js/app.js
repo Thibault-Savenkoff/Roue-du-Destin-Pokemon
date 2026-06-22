@@ -656,6 +656,8 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
 
             if (time - startTime < SPIN_DURATION) {
                 requestAnimationFrame(tickHaptics);
+            } else {
+                window._h?.trigger('medium');
             }
         }
         requestAnimationFrame(tickHaptics);
