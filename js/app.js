@@ -671,7 +671,7 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
 
         // ── Fin de l'animation ──
         setTimeout(() => {
-            vibrate([40, 30, 80]);
+            window._h?.trigger('medium');
             currentRotation = targetRotation; // Mémorise la rotation finale pour le prochain spin
             isAnimating = false;
 
@@ -930,6 +930,7 @@ async function lanceDestinee(mode = 'auto') {
         if (finalData.isShiny) {
             addToSummary("Shiny", "✨ OUI ✨", true);
             playShiny();
+            window._h?.trigger('heavy');
         } else {
             addToSummary("Shiny", "Non");
         }
@@ -1051,7 +1052,7 @@ function generateOutputs(d) {
     saveToHistory(d, promptV2);
     updateCounter();
 
-    vibrate([100, 50, 100, 50, 400]);
+    window._h?.trigger('success');
 }
 
 // ── Faiblesses ────────────────────────────────────────────────────────────────
@@ -1133,6 +1134,7 @@ function saveToHistory(d, prompt) {
 }
 
 function toggleHistorySort() {
+    window._h?.trigger('selection');
     historySortBy = historySortBy === 'date' ? 'bst' : 'date';
     const btn = document.getElementById('btn-history-sort');
     if (btn) btn.textContent = historySortBy === 'bst' ? '🏆 BST ↓' : '📅 Date';
@@ -1242,6 +1244,7 @@ if (btnGenerer) {
 
     const switchToAutoMode = () => {
         if (isAnimating) return;
+        window._h?.trigger('medium');
         if (currentMode === 'manuel' && manualResolve) {
             // Mid-sequence: continue the current sequence in auto mode
             currentMode = 'auto';
@@ -1258,11 +1261,12 @@ if (btnGenerer) {
 }
 
 const btnRapide = document.getElementById('btn-rapide');
-if (btnRapide) btnRapide.addEventListener('click', () => lanceDestinee('rapide'));
+if (btnRapide) btnRapide.addEventListener('click', () => { window._h?.trigger('medium'); lanceDestinee('rapide'); });
 
 const btnManuel = document.getElementById('btn-manuel');
 if (btnManuel) btnManuel.addEventListener('click', () => {
     if (isAnimating) return;
+    window._h?.trigger('medium');
     if (isSequenceRunning) {
         currentMode = 'manuel';
         updateModeButtons('manuel');

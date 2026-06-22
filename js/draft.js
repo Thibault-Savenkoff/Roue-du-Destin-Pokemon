@@ -48,6 +48,7 @@ function showTurnIndicator(i) {
 }
 
 function startDraft(playerNames) {
+    window._h?.trigger('medium');
     draftPlayers = playerNames.map(name => ({ name }));
     draftResults = [];
     draftUsedCombos = new Set();
@@ -235,6 +236,7 @@ async function lanceDraftDestinee() {
         draftActive = false;
         titleElem.textContent = 'Draft Terminé !';
         playFanfare();
+        window._h?.trigger('success');
         renderDraftResults();
         document.getElementById('draft-results').classList.remove('hidden');
 
@@ -292,7 +294,7 @@ function shareDraftResults() {
         btn.textContent = ok ? '✅ Lien copié !' : '❌ Erreur';
         setTimeout(() => { btn.textContent = orig; }, 2500);
     };
-    if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => showFeedback(true)).catch(() => showFeedback(false));
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => { window._h?.trigger('light'); showFeedback(true); }).catch(() => showFeedback(false));
     else {
         const ta = document.createElement('textarea');
         ta.value = url; document.body.appendChild(ta); ta.select();

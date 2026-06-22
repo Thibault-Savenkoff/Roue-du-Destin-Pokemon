@@ -113,7 +113,7 @@
     <header class="text-center w-full max-w-sm mb-6 mt-4">
         <div class="flex justify-between w-full text-slate-400 text-xs mb-2">
             <!-- Bouton qui bascule la classe "tiktok-mode" sur le body -->
-            <button onclick="const on=document.body.classList.toggle('tiktok-mode');if(on)document.dispatchEvent(new CustomEvent('tiktok-start'));" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">📱 Mode TikTok</button>
+            <button onclick="const on=document.body.classList.toggle('tiktok-mode');if(on)document.dispatchEvent(new CustomEvent('tiktok-start'));window._h?.trigger('light');" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">📱 Mode TikTok</button>
             <button id="btn-son" onclick="this.textContent = toggleMute() ? '🔇' : '🔊'" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">🔊</button>
             <a href="settings.html" class="hover:text-white flex items-center bg-slate-800 px-3 py-1 rounded-full border border-slate-700">⚙️ Paramètres</a>
         </div>
@@ -122,9 +122,9 @@
         <p id="counter-display" class="text-slate-600 text-xs mt-1"></p>
         <!-- Sélecteur de thème -->
         <div class="flex gap-2 mt-2 justify-center">
-            <button onclick="setTheme('')"         class="w-5 h-5 rounded-full bg-amber-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-amber-300 transition-all" title="Ambre"></button>
-            <button onclick="setTheme('ecarlate')" class="w-5 h-5 rounded-full bg-red-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-red-300 transition-all" title="Écarlate"></button>
-            <button onclick="setTheme('violet')"   class="w-5 h-5 rounded-full bg-violet-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-violet-300 transition-all" title="Violet"></button>
+            <button onclick="setTheme('');window._h?.trigger('selection')"         class="w-5 h-5 rounded-full bg-amber-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-amber-300 transition-all" title="Ambre"></button>
+            <button onclick="setTheme('ecarlate');window._h?.trigger('selection')" class="w-5 h-5 rounded-full bg-red-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-red-300 transition-all" title="Écarlate"></button>
+            <button onclick="setTheme('violet');window._h?.trigger('selection')"   class="w-5 h-5 rounded-full bg-violet-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-violet-300 transition-all" title="Violet"></button>
         </div>
     </header>
 
@@ -305,10 +305,10 @@
         <div class="space-y-2">
             <p class="text-xs text-slate-500 text-center uppercase tracking-wider">Exporter</p>
             <div class="grid grid-cols-4 gap-2">
-                <button onclick="exportResultImage(lastFinalData,'png')"  class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">PNG</button>
-                <button onclick="exportResultImage(lastFinalData,'jpeg')" class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">JPEG</button>
-                <button onclick="exportResultImage(lastFinalData,'webp')" class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">WebP</button>
-                <button onclick="exportResultSVG(lastFinalData)"          class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">SVG</button>
+                <button onclick="window._h?.trigger('light');exportResultImage(lastFinalData,'png')"  class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">PNG</button>
+                <button onclick="window._h?.trigger('light');exportResultImage(lastFinalData,'jpeg')" class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">JPEG</button>
+                <button onclick="window._h?.trigger('light');exportResultImage(lastFinalData,'webp')" class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">WebP</button>
+                <button onclick="window._h?.trigger('light');exportResultSVG(lastFinalData)"          class="bg-sky-800 hover:bg-sky-700 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">SVG</button>
             </div>
         </div>
     </div>
@@ -353,6 +353,10 @@
     <script src="js/draft.js"></script>
     <script src="js/peer.js"></script>
     <script src="js/export.js"></script>
+    <script type="module">
+        import { WebHaptics } from 'https://cdn.jsdelivr.net/npm/web-haptics/+esm';
+        window._h = new WebHaptics();
+    </script>
     <script>
         if ('serviceWorker' in navigator)
             navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
