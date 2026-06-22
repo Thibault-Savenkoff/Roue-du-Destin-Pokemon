@@ -353,6 +353,7 @@ wheelCanvas.addEventListener('click', () => {
     }
     // Cas 2 : on est déjà en mode manuel ET on attend un clic pour démarrer le prochain spin
     else if (currentMode === 'manuel' && manualResolve && !isAnimating) {
+        window._h?.trigger('medium');
         manualResolve();       // Résout la Promise en attente → le spin suivant démarre
         manualResolve = null;  // Libère la référence
         document.getElementById('center-circle').textContent = "Spin"; // Remet le label du bouton
@@ -656,11 +657,16 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
             }
             lastSegment = currentSegment;
 
+            // À 70% du spin : heavy "atterrissage" (fonctionne nativement sans limite de fenêtre)
+            if (!landingHapticFired && elapsed >= SPIN_DURATION * 0.70) {
+                window._h?.trigger('heavy');
+                landingHapticFired = true;
+            }
 
             if (elapsed < SPIN_DURATION) {
                 requestAnimationFrame(tickHaptics);
             } else {
-                window._h?.trigger('medium'); // Android uniquement
+                window._h?.trigger('medium'); // Android : pulse de fin
             }
         }
         requestAnimationFrame(tickHaptics);
