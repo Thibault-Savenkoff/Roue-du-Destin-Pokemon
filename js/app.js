@@ -649,7 +649,6 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
             if (currentSegment === -1) currentSegment = 0;
 
             if (currentSegment !== lastSegment && lastSegment !== -1) {
-                window._h?.trigger('selection');
                 playTick();
             }
             lastSegment = currentSegment;
@@ -659,6 +658,7 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
             }
         }
         requestAnimationFrame(tickHaptics);
+        setTimeout(() => window._h?.trigger('light'), SPIN_DURATION * 0.65 + peerDelay);
 
         // ── Fin de l'animation ──
         setTimeout(() => {
