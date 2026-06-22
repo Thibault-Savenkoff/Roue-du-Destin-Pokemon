@@ -656,11 +656,6 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
             }
             lastSegment = currentSegment;
 
-            // À 20% du spin (~800ms) : heavy encore dans la fenêtre iOS
-            if (!landingHapticFired && elapsed >= SPIN_DURATION * 0.20) {
-                window._h?.trigger('heavy');
-                landingHapticFired = true;
-            }
 
             if (elapsed < SPIN_DURATION) {
                 requestAnimationFrame(tickHaptics);
@@ -1244,7 +1239,7 @@ if (btnGenerer) {
 
     const switchToAutoMode = () => {
         if (isAnimating) return;
-        window._h?.trigger('medium');
+        window._h?.trigger('heavy');
         if (currentMode === 'manuel' && manualResolve) {
             // Mid-sequence: continue the current sequence in auto mode
             currentMode = 'auto';
@@ -1261,12 +1256,12 @@ if (btnGenerer) {
 }
 
 const btnRapide = document.getElementById('btn-rapide');
-if (btnRapide) btnRapide.addEventListener('click', () => { window._h?.trigger('medium'); lanceDestinee('rapide'); });
+if (btnRapide) btnRapide.addEventListener('click', () => { window._h?.trigger('heavy'); lanceDestinee('rapide'); });
 
 const btnManuel = document.getElementById('btn-manuel');
 if (btnManuel) btnManuel.addEventListener('click', () => {
     if (isAnimating) return;
-    window._h?.trigger('medium');
+    window._h?.trigger('heavy');
     if (isSequenceRunning) {
         currentMode = 'manuel';
         updateModeButtons('manuel');
