@@ -656,15 +656,11 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
 
             if (time - startTime < SPIN_DURATION) {
                 requestAnimationFrame(tickHaptics);
+            } else {
+                window._h?.trigger('medium'); // atterrissage : même contexte rAF que les ticks
             }
         }
         requestAnimationFrame(tickHaptics);
-
-        // Atterrissage via transitionend (trusted event sur iOS, contrairement à setTimeout)
-        wheelCanvas.addEventListener('transitionend', function onLand() {
-            wheelCanvas.removeEventListener('transitionend', onLand);
-            window._h?.trigger('medium');
-        });
 
         // ── Fin de l'animation ──
         setTimeout(() => {
