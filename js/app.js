@@ -45,15 +45,6 @@ let manualSessionId = 0;       // Identifie la session manuelle active
 let lastFinalData = null;     // Dernier résultat complet (Phase 4 export)
 let historySortBy = 'date';  // 'date' | 'bst'
 
-/**
- * Vibration helper using la Web Vibration API native du navigateur.
- * Ne fait rien si l'API n'est pas supportée.
- * @param {number|Array<number>} pattern
- */
-function vibrate(pattern) {
-    if (navigator.vibrate) navigator.vibrate(pattern);
-}
-
 // ── Indicateur de mode actif ─────────────────────────────────────────────────
 function updateModeButtons(activeMode) {
     const map = {
@@ -658,7 +649,7 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
             if (currentSegment === -1) currentSegment = 0;
 
             if (currentSegment !== lastSegment && lastSegment !== -1) {
-                vibrate(10);
+                window._h?.trigger('selection');
                 playTick();
             }
             lastSegment = currentSegment;

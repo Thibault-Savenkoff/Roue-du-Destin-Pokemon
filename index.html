@@ -382,7 +382,7 @@
             const btn = document.querySelector('#results-display button');
             const text = Array.from(items).map(li => li.innerText).join('\n');
             const showFeedback = () => {
-                if (navigator.vibrate) navigator.vibrate(50);
+                window._h?.trigger('light');
                 const orig = btn.innerText;
                 btn.innerText = '✅ Copié !';
                 setTimeout(() => { btn.innerText = orig; }, 2000);
@@ -404,7 +404,7 @@
             const activeColor = id.includes('prompt') ? 'bg-blue-600' : 'bg-green-600';
 
             const showFeedback = () => {
-                if (navigator.vibrate) navigator.vibrate(50);
+                window._h?.trigger('light');
                 btn.innerText = "Copié !";
                 btn.classList.replace(activeColor, 'bg-slate-600');
                 setTimeout(() => {
