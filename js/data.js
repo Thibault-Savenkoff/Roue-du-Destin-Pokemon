@@ -26,7 +26,7 @@ function normaliseData(raw) {
 }
 
 async function initData() {
-    const raw = await fetch('data.json').then(r => r.json());
+    const raw = window.__NATIVE_DATA__ ?? await fetch('data.json').then(r => r.json());
     defaultData = normaliseData(raw);
     const stored = localStorage.getItem('roue-data');
     data = stored ? JSON.parse(stored) : defaultData;
