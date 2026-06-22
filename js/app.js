@@ -649,6 +649,7 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
             if (currentSegment === -1) currentSegment = 0;
 
             if (currentSegment !== lastSegment && lastSegment !== -1) {
+                window._h?.trigger('selection');
                 playTick();
             }
             lastSegment = currentSegment;
@@ -658,11 +659,15 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
             }
         }
         requestAnimationFrame(tickHaptics);
-        setTimeout(() => window._h?.trigger('light'), SPIN_DURATION * 0.65 + peerDelay);
+
+        // Atterrissage via transitionend (trusted event sur iOS, contrairement à setTimeout)
+        wheelCanvas.addEventListener('transitionend', function onLand() {
+            wheelCanvas.removeEventListener('transitionend', onLand);
+            window._h?.trigger('medium');
+        });
 
         // ── Fin de l'animation ──
         setTimeout(() => {
-            window._h?.trigger('medium');
             currentRotation = targetRotation; // Mémorise la rotation finale pour le prochain spin
             isAnimating = false;
 
