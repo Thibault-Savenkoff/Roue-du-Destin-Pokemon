@@ -656,8 +656,8 @@ function spinWheel(title, optionsArray, isType = false, forcedWinner = null) {
             }
             lastSegment = currentSegment;
 
-            // À 45% du spin (~1800ms) : heavy dans la fenêtre iOS de 2s
-            if (!landingHapticFired && elapsed >= SPIN_DURATION * 0.45) {
+            // À 20% du spin (~800ms) : heavy encore dans la fenêtre iOS
+            if (!landingHapticFired && elapsed >= SPIN_DURATION * 0.20) {
                 window._h?.trigger('heavy');
                 landingHapticFired = true;
             }
