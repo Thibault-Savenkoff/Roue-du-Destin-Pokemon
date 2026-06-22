@@ -1,0 +1,28 @@
+{
+  "name": "roue-du-destin-pokemon",
+  "version": "1.0.0",
+  "description": "Lance le start.bat frr et va ici : http://localhost:3000/ pour jouer à la roue du destin pokemon.",
+  "main": "sw.js",
+  "scripts": {
+    "build": "rm -rf www && mkdir www && cp index.html settings.html manifest.json data.json sw.js www/ && cp -r js icons www/",
+    "sync": "npm run build && npx cap sync"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Thibault-Savenkoff/Roue-du-Destin-Pokemon.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Thibault-Savenkoff/Roue-du-Destin-Pokemon/issues"
+  },
+  "homepage": "https://github.com/Thibault-Savenkoff/Roue-du-Destin-Pokemon#readme",
+  "dependencies": {
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.4.1"
+  }
+}

@@ -1,3 +1,19 @@
+// Capacitor native haptics (iOS app) — no gesture window limit
+if (window.Capacitor?.isNativePlatform?.()) {
+    const H = window.Capacitor.Plugins.Haptics;
+    window._h = {
+        trigger(preset) {
+            if (preset === 'success' || preset === 'warning' || preset === 'error') {
+                H.notification({ type: preset.toUpperCase() });
+            } else if (preset === 'selection') {
+                H.selectionChanged();
+            } else {
+                H.impact({ style: { light:'LIGHT', heavy:'HEAVY' }[preset] || 'MEDIUM' });
+            }
+        }
+    };
+} else {
+
 ;(function(){
 /**
  * Bundled by jsDelivr using Rollup v2.79.2 and Terser v5.39.0.
@@ -25,3 +41,5 @@ if (localStorage.getItem('roue-debug-haptics')) {
     };
 }
 })();
+
+} // end Capacitor else
