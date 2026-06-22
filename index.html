@@ -353,10 +353,7 @@
     <script src="js/draft.js"></script>
     <script src="js/peer.js"></script>
     <script src="js/export.js"></script>
-    <script type="module">
-        import { WebHaptics } from 'https://cdn.jsdelivr.net/npm/web-haptics/+esm';
-        window._h = new WebHaptics();
-    </script>
+    <script src="js/haptics.js"></script>
     <script>
         if ('serviceWorker' in navigator)
             navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
